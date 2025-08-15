@@ -1,0 +1,22 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - '8000:8000'
+    volumes:
+      - ./storage:/app/storage
+      - ./reports:/app/reports
+  frontend:
+    build: ./frontend
+    ports:
+      - '3000:3000'
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
