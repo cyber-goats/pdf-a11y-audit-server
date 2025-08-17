@@ -86,3 +86,59 @@ Po uruchomieniu serwera (niezależnie od metody), otwórz przeglądarkę i przej
 **`http://localhost:8000/docs`**
 
 Powinieneś zobaczyć automatycznie wygenerowaną, interaktywną dokumentację API (Swagger UI). To potwierdza, że backend działa poprawnie.
+
+
+## 🧪 Testowanie Endpointu
+
+Po uruchomieniu aplikacji możesz łatwo przetestować główny endpoint do analizy plików PDF.
+
+1.  **Otwórz interaktywną dokumentację** w przeglądarce, przechodząc pod adres:
+    **`http://localhost:8000/docs`**
+
+2.  **Znajdź endpoint `POST /upload/pdf/`** w sekcji "PDF Processing" i rozwiń go.
+
+3.  Kliknij przycisk **"Try it out"**.
+
+4.  W nowo otwartym formularzu kliknij **"Choose File"** i wybierz plik PDF ze swojego komputera.
+
+5.  Naciśnij niebieski przycisk **"Execute"**.
+
+6.  **Sprawdź wynik** w sekcji "Server response". Powinieneś otrzymać odpowiedź w formacie JSON z analizą Twojego pliku, np.:
+    ```json
+    {
+      "filename": "przykladowy.pdf",
+      "page_count": 10,
+      "is_tagged": true,
+      "contains_text": true,
+      "extracted_text_preview": "To jest początek tekstu..."
+    }
+    ```
+
+
+---
+
+## 🛠️ Lokalne Uruchomienie Tylko Backendu (Do Dewelopmentu)
+
+Poniższe kroki pozwolą Ci uruchomić sam serwer backendowy na Twojej maszynie, co jest przydatne podczas pisania kodu i debugowania.
+
+1.  **Utwórz i aktywuj środowisko wirtualne Pythona**:
+    Będąc w głównym katalogu projektu, uruchom:
+    ```bash
+    # Utworzenie środowiska
+    py -m venv .venv
+
+    # Aktywacja środowiska (dla Windows PowerShell)
+    .\.venv\Scripts\Activate.ps1
+    ```
+
+2.  **Zainstaluj zależności**:
+    Mając aktywne środowisko, zainstaluj wszystkie wymagane biblioteki.
+    ```bash
+    pip install -r backend/requirements.txt
+    ```
+
+3.  **Uruchom serwer deweloperski**:
+    Ta komenda uruchomi serwer FastAPI z folderu głównego projektu.
+    ```bash
+    uvicorn backend.app.main:app --reload
+    ```
