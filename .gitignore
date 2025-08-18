@@ -45,6 +45,8 @@ next-env.d.ts
 #storage
 storage/
 
+#reports
+reports/
 # Environment variables
 .env
 
