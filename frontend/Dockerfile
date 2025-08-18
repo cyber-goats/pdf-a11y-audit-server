@@ -11,8 +11,9 @@ RUN npm install
 # Kopiujemy kod źródłowy
 COPY . .
 
-# Wyłączamy telemetrię Next.js
-ENV NEXT_TELEMETRY_DISABLED 1
+# Ustawiamy zmienne środowiskowe
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_API_URL=http://localhost:8000
 
 # Budujemy aplikację
 RUN npm run build
