@@ -6,10 +6,22 @@ services:
     volumes:
       - ./storage:/app/storage
       - ./reports:/app/reports
+    environment:
+      - PYTHONPATH=/app
+    networks:
+      - app-network
+
   frontend:
     build: ./frontend
     ports:
       - '3000:3000'
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
   db:
     image: postgres:15
     environment:
@@ -18,5 +30,12 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
+
 volumes:
   pgdata:
+
+networks:
+  app-network:
+    driver: bridge
