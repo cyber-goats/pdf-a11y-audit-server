@@ -1,12 +1,13 @@
-FROM python:3.11-slim
+FROM python:3.11
 
-WORKDIR /app
+WORKDIR /code
 
 COPY requirements.txt .
+
+# Dodajemy krok czyszczący, aby usunąć potencjalny konflikt
+RUN pip uninstall -y PyFitz || true
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Ta komenda skopiuje cały folder 'app' (z 'main.py' i 'routers/')
-COPY ./app /app
+COPY ./app /code/app
 
-# Ta komenda poprawnie uruchomi aplikację
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
