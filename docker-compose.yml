@@ -6,10 +6,14 @@ services:
     volumes:
       - ./storage:/app/storage
       - ./reports:/app/reports
+      - pdf_files:/tmp/pdfs
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PYTHONPATH=/app
     networks:
       - app-network
+    depends_on:
+      - verapdf
 
   frontend:
     build: ./frontend
@@ -33,8 +37,19 @@ services:
     networks:
       - app-network
 
+  verapdf:
+    image: verapdf/cli:latest
+    container_name: verapdf_service
+    restart: unless-stopped
+    entrypoint: ["tail", "-f", "/dev/null"]
+    volumes:
+      - pdf_files:/tmp/pdfs
+    networks:
+      - app-network
+
 volumes:
   pgdata:
+  pdf_files:
 
 networks:
   app-network:

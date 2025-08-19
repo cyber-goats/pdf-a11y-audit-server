@@ -1,4 +1,9 @@
 import pymupdf as fitz
+import subprocess
+import logging
+from typing import Tuple
+import xml.etree.ElementTree as ET
+from typing import List, Dict
 
 def is_pdf_tagged(doc: fitz.Document) -> bool:
     """Sprawdza, czy dokument PDF jest otagowany."""
@@ -84,3 +89,89 @@ def analyze_pdf(file_bytes: bytes) -> dict:
     except Exception as e:
         print(f"Error during PDF analysis: {e}")
         return None
+    
+# Konfiguracja logowania
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Nazwa kontenera zdefiniowana w docker-compose.yml
+VERAPDF_CONTAINER_NAME = "verapdf_service"
+
+
+def validate_pdf_ua(pdf_filename: str) -> Tuple[bool, str]:
+    """
+    Uruchamia walidację pliku PDF pod kątem zgodności z PDF/UA (WCAG).
+    """
+    shared_path = f"/tmp/pdfs/{pdf_filename}"
+    logger.info(f"Rozpoczynanie walidacji PDF/UA dla pliku: {shared_path}")
+
+    command = [
+        "docker", "exec", VERAPDF_CONTAINER_NAME,
+        "/opt/verapdf/verapdf",
+        "--format", "xml",
+        "--flavour", "2b",
+        shared_path
+    ]
+
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=False 
+        )
+
+        if result.returncode > 1:
+            error_message = f"Błąd wykonania veraPDF. Kod: {result.returncode}. stderr: {result.stderr}"
+            logger.error(error_message)
+            return False, f"<error>{error_message}</error>"
+
+        is_compliant = result.returncode == 0
+        status = "ZGODNY" if is_compliant else "NIEZGODNY"
+        logger.info(f"Walidacja zakończona. Status: {status}")
+
+        report_output = result.stdout if result.stdout else result.stderr
+        return is_compliant, report_output
+
+    except FileNotFoundError:
+        error_message = "Polecenie 'docker' nie zostało znalezione w kontenerze backendu."
+        logger.critical(error_message)
+        return False, f"<error>{error_message}</error>"
+    except Exception as e:
+        error_message = f"Niespodziewany błąd podczas walidacji: {e}"
+        logger.error(error_message)
+        return False, f"<error>{error_message}</error>"
+    
+def parse_verapdf_report(xml_report: str) -> List[Dict]:
+    """
+    Parsuje raport XML z veraPDF i wyciąga listę błędów.
+
+    Args:
+        xml_report: Raport z walidacji w formacie XML jako string.
+
+    Returns:
+        Lista słowników, gdzie każdy słownik reprezentuje jeden błąd.
+    """
+    failed_rules = []
+    try:
+        # Usuwamy przestrzeń nazw, jeśli istnieje, dla uproszczenia
+        xml_report = xml_report.replace('xmlns="http://www.verapdf.org/ValidationProfile"', '')
+        root = ET.fromstring(xml_report)
+
+        # Szukamy wszystkich reguł, które nie przeszły walidacji
+        for rule in root.findall('.//rule[@status="failed"]'):
+            error = {
+                "specification": rule.get("specification"),
+                "clause": rule.get("clause"),
+                "testNumber": rule.get("testNumber"),
+                "description": rule.find("description").text if rule.find("description") is not None else "No description"
+            }
+            failed_rules.append(error)
+        
+        return failed_rules
+
+    except ET.ParseError:
+        # Zdarza się, gdy veraPDF zwróci błąd zamiast XML
+        return [{"error": "Failed to parse veraPDF XML report."}]
+    except Exception as e:
+        return [{"error": f"An unexpected error occurred during XML parsing: {str(e)}"}]
