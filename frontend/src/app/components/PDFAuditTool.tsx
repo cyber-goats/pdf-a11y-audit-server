@@ -18,6 +18,38 @@ const PDFAuditTool = () => {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const dropZoneRef = useRef<HTMLDivElement>(null);
 
+	const validateFile = (file: File): Promise<boolean> => {
+		return new Promise((resolve) => {
+			// 1. Quick MIME type verification (first line of defence)
+			if (file.type !== 'application/pdf') {
+				setError('Wybrany plik nie jest w formacie PDF.');
+				resolve(false);
+				return;
+			}
+
+			// 2. Verification of the file signature (the most reliable method)
+			const reader = new FileReader();
+			reader.onload = () => {
+				const arr = new Uint8Array(reader.result as ArrayBuffer).subarray(0, 5);
+				const header = Array.from(arr)
+					.map((b) => String.fromCharCode(b))
+					.join('');
+				if (header === '%PDF-') {
+					resolve(true);
+				} else {
+					setError('Plik nie jest prawidłowym dokumentem PDF.');
+					resolve(false);
+				}
+			};
+			reader.onerror = () => {
+				setError('Nie udało się odczytać pliku.');
+				resolve(false);
+			};
+			// Read only the first 5 bytes of the file
+			reader.readAsArrayBuffer(file.slice(0, 5));
+		});
+	};
+
 	useEffect(() => {
 		if (isLoading) {
 			const interval = setInterval(() => {
@@ -48,33 +80,37 @@ const PDFAuditTool = () => {
 		e.preventDefault();
 		e.stopPropagation();
 	};
-	const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+	const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
 		e.preventDefault();
 		e.stopPropagation();
 		setIsDragging(false);
 		const droppedFile = e.dataTransfer.files[0];
-		if (droppedFile && droppedFile.type === 'application/pdf') {
+
+		if (droppedFile && (await validateFile(droppedFile))) {
 			setFile(droppedFile);
 			setError(null);
 			setResults(null);
-		} else {
-			setError('Proszę upuścić plik PDF');
+		} else if (!droppedFile) {
+			setError('Nie upuszczono żadnego pliku.');
 		}
 	};
 
-	const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+	const handleFileSelect = async (
+		event: React.ChangeEvent<HTMLInputElement>
+	) => {
 		const selectedFile = event.target.files?.[0] || null;
-		if (selectedFile && !selectedFile.type.includes('pdf')) {
-			setError('Proszę wybrać plik PDF. Wybrany plik nie jest obsługiwany.');
+		if (!selectedFile) return;
+
+		if (await validateFile(selectedFile)) {
+			setFile(selectedFile);
+			setError(null);
+			setResults(null);
+		} else {
 			setFile(null);
 			if (fileInputRef.current) {
 				fileInputRef.current.value = '';
 			}
-			return;
 		}
-		setFile(selectedFile);
-		setError(null);
-		setResults(null);
 	};
 
 	const handleSubmit = async () => {
