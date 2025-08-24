@@ -2,3 +2,4 @@ fastapi
 uvicorn[standard]
 python-multipart
 pymupdf # tu Łukasz musze zmienic na pymupdf bo przy 1.26.3 metoda do pobierania struktuy coś dziwnie się sypie
+weasyprint
