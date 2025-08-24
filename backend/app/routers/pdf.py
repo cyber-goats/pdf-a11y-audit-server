@@ -213,64 +213,181 @@ def generate_recommendations(analysis: dict, failed_rules: list) -> list:
     return recommendations
 
 def generate_html_report(report_data: dict) -> str:
-    """Generuje raport w formacie HTML"""
+    """Generuje nowoczesny i poprawnie ostylowany raport w formacie HTML."""
+
+    # Bezpieczne pobieranie danych z raportu
+    metadata = report_data.get('metadata', {})
+    score_data = report_data.get('accessibility_score', {})
+    recommendations = report_data.get('recommendations', [])
+
+    filename = metadata.get('filename', 'Brak nazwy')
+    analysis_date = metadata.get('analysis_date', 'Brak daty')
+
+    percentage = score_data.get('percentage', 0)
+    level = score_data.get('level', 'Niski')
+    details = score_data.get('details', [])
+
+    # Mapowanie poziomów na klasy CSS i kolory
+    level_map = {
+        "Wysoki": {"class": "high", "color": "#10B981"},
+        "Średni": {"class": "medium", "color": "#F59E0B"},
+        "Niski": {"class": "low", "color": "#EF4444"}
+    }
+    level_info = level_map.get(level, level_map["Niski"])
+
+    # Generowanie wierszy tabeli ze szczegółami wyników
+    details_rows = ""
+    for detail in details:
+        details_rows += f"""
+            <tr>
+                <td>{detail.get('criterion', 'Brak danych')}</td>
+                <td>{detail.get('points', 0)} / {detail.get('max', 0)}</td>
+            </tr>
+        """
+
+    # Generowanie listy rekomendacji
+    recommendations_list = ""
+    if recommendations:
+        for rec in recommendations:
+            priority = rec.get('priority', 'low')
+            recommendations_list += f"""
+                <div class="recommendation {priority}">
+                    <span class="priority {priority}">{priority.upper()}</span>
+                    <div class="content">
+                        <strong>{rec.get('issue', 'Brak danych')}</strong>
+                        <p>{rec.get('recommendation', 'Brak danych')}</p>
+                    </div>
+                </div>
+            """
+    else:
+        recommendations_list = "<p>Brak rekomendacji. Dobra robota!</p>"
+
+    # Kompletny szablon HTML
     html = f"""
     <!DOCTYPE html>
     <html lang="pl">
     <head>
         <meta charset="UTF-8">
-        <title>Raport dostępności PDF</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Raport Dostępności PDF</title>
         <style>
-            body {{ font-family: Arial, sans-serif; margin: 40px; }}
-            h1 {{ color: #333; }}
-            .score {{ font-size: 48px; font-weight: bold; }}
-            .high {{ color: #10b981; }}
-            .medium {{ color: #f59e0b; }}
-            .low {{ color: #ef4444; }}
-            table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
-            th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }}
-            th {{ background-color: #f3f4f6; }}
+            @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap');
+            body {{
+                font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background-color: #f8f9fa;
+                color: #212529;
+                margin: 0;
+                padding: 2rem;
+                line-height: 1.6;
+            }}
+            .container {{
+                max-width: 800px;
+                margin: auto;
+                background: #ffffff;
+                border-radius: 12px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+                overflow: hidden;
+            }}
+            .header {{
+                background-color: #4A5568;
+                color: #ffffff;
+                padding: 2rem;
+            }}
+            .header h1 {{ margin: 0; font-size: 2.25rem; }}
+            .header p {{ margin: 0.25rem 0 0; opacity: 0.8; }}
+            .section {{ padding: 2rem; border-bottom: 1px solid #e9ecef; }}
+            .section:last-child {{ border-bottom: none; }}
+            h2 {{ font-size: 1.75rem; color: #2c3e50; margin-top: 0; border-bottom: 2px solid #e0e0e0; padding-bottom: 0.5rem; }}
+            .score-card {{
+                text-align: center;
+                padding: 2rem;
+                border: 1px solid {level_info['color']};
+                background-color: color-mix(in srgb, {level_info['color']} 10%, transparent);
+                border-radius: 8px;
+            }}
+            .score {{
+                font-size: 4.5rem;
+                font-weight: 700;
+                color: {level_info['color']};
+            }}
+            .score-level {{ font-size: 1.25rem; color: {level_info['color']}; font-weight: 700; }}
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 1.5rem;
+            }}
+            th, td {{
+                padding: 0.75rem 1rem;
+                text-align: left;
+                border-bottom: 1px solid #dee2e6;
+            }}
+            th {{ background-color: #f1f3f5; font-weight: 700; }}
+            .recommendation {{
+                display: flex;
+                align-items: flex-start;
+                gap: 1rem;
+                margin-bottom: 1rem;
+                padding: 1rem;
+                background-color: #f8f9fa;
+                border-radius: 8px;
+                border-left: 5px solid;
+            }}
+            .recommendation .priority {{
+                flex-shrink: 0;
+                padding: 0.25rem 0.75rem;
+                border-radius: 1rem;
+                font-size: 0.8rem;
+                font-weight: 700;
+                color: #fff;
+            }}
+            .recommendation .priority.high {{ background-color: #EF4444; }}
+            .recommendation .priority.medium {{ background-color: #F59E0B; }}
+            .recommendation .priority.low {{ background-color: #10B981; }}
+            .recommendation strong {{ display: block; margin-bottom: 0.25rem; font-size: 1.1rem; }}
+            .recommendation p {{ margin: 0; }}
+            .recommendation.high {{ border-color: #EF4444; }}
+            .recommendation.medium {{ border-color: #F59E0B; }}
+            .recommendation.low {{ border-color: #10B981; }}
         </style>
     </head>
     <body>
-        <h1>Raport dostępności PDF</h1>
-        <p><strong>Plik:</strong> {report_data['metadata']['filename']}</p>
-        <p><strong>Data analizy:</strong> {report_data['metadata']['analysis_date']}</p>
-        
-        <h2>Wynik dostępności</h2>
-        <div class="score {report_data['accessibility_score']['level'].lower()}">
-            {report_data['accessibility_score']['percentage']}%
+        <div class="container">
+            <header class="header">
+                <h1>Raport Dostępności PDF</h1>
+                <p><strong>Plik:</strong> {filename}</p>
+                <p><strong>Data analizy:</strong> {analysis_date}</p>
+            </header>
+
+            <section class="section">
+                <h2>Wynik Dostępności</h2>
+                <div class="score-card">
+                    <div class="score">{percentage}%</div>
+                    <div class="score-level">Poziom: {level}</div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>Szczegóły Analizy</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kryterium</th>
+                            <th>Wynik</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {details_rows}
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="section">
+                <h2>Rekomendacje</h2>
+                {recommendations_list}
+            </section>
         </div>
-        <p>Poziom: {report_data['accessibility_score']['level']}</p>
-        
-        <h2>Szczegóły analizy</h2>
-        <table>
-            <tr><th>Kryterium</th><th>Punkty</th><th>Max</th></tr>
-    """
-    
-    for detail in report_data['accessibility_score']['details']:
-        html += f"""
-            <tr>
-                <td>{detail['criterion']}</td>
-                <td>{detail['points']}</td>
-                <td>{detail['max']}</td>
-            </tr>
-        """
-    
-    html += """
-        </table>
-        
-        <h2>Rekomendacje</h2>
-        <ul>
-    """
-    
-    for rec in report_data['recommendations']:
-        html += f"<li><strong>[{rec['priority'].upper()}]</strong> {rec['issue']}: {rec['recommendation']}</li>"
-    
-    html += """
-        </ul>
     </body>
     </html>
     """
-    
+
     return html

@@ -5,3 +5,117 @@ body {
 	color: #171717;
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
+
+/* Custom scrollbar dla raportów */
+.custom-scrollbar::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+	background: rgba(255, 255, 255, 0.05);
+	border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.2);
+	border-radius: 4px;
+	transition: background 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.3);
+}
+
+/* Animacja fade in */
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.animate-fadeIn {
+	animation: fadeIn 0.5s ease-out;
+}
+
+/* Smooth transitions for interactive elements */
+* {
+	transition-property: background-color, border-color, color, fill, stroke;
+	transition-duration: 200ms;
+	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Print styles dla raportów */
+@media print {
+	.no-print {
+		display: none !important;
+	}
+
+	body {
+		background: white;
+		color: black;
+	}
+
+	.print-break-page {
+		page-break-after: always;
+	}
+}
+
+/* Gradient text animation */
+@keyframes gradient-shift {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
+}
+
+.animate-gradient {
+	background-size: 200% 200%;
+	animation: gradient-shift 3s ease infinite;
+}
+
+/* Focus styles for accessibility */
+button:focus-visible,
+a:focus-visible {
+	outline: 2px solid rgba(139, 92, 246, 0.5);
+	outline-offset: 2px;
+}
+
+/* Glassmorphism effect enhancement */
+.glass-effect {
+	background: rgba(255, 255, 255, 0.1);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Loading skeleton animation */
+@keyframes shimmer {
+	0% {
+		background-position: -1000px 0;
+	}
+	100% {
+		background-position: 1000px 0;
+	}
+}
+
+.skeleton {
+	background: linear-gradient(
+		90deg,
+		rgba(255, 255, 255, 0.05) 0%,
+		rgba(255, 255, 255, 0.1) 50%,
+		rgba(255, 255, 255, 0.05) 100%
+	);
+	background-size: 1000px 100%;
+	animation: shimmer 2s infinite;
+}
