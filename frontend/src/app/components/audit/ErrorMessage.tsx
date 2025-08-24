@@ -1,9 +1,6 @@
 import { AlertIcon } from '@/app/components/audit/Icons';
 import React from 'react';
-
-interface ErrorMessageProps {
-	error: string | null;
-}
+import type { ErrorMessageProps } from '@/app/types';
 
 export const ErrorMessage: React.FC<ErrorMessageProps> = ({ error }) => {
 	if (!error) return null;

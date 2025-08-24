@@ -1,24 +1,6 @@
 import React from 'react';
-import type { Results } from './AnalysisResults';
+import type { FileUploadProps } from '@/app/types';
 import { UploadIcon, FileIcon, LoaderIcon, SparklesIcon } from './Icons';
-
-interface FileUploadProps {
-	file: File | null;
-	isLoading: boolean;
-	isDragging: boolean;
-	progress: number;
-	results: Results | null;
-	dropZoneRef: React.Ref<HTMLDivElement>;
-	fileInputRef: React.Ref<HTMLInputElement>;
-	handleDragEnter: (e: React.DragEvent<HTMLDivElement>) => void;
-	handleDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
-	handleDragLeave: (e: React.DragEvent<HTMLDivElement>) => void;
-	handleDrop: (e: React.DragEvent<HTMLDivElement>) => void;
-	handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
-	handleSubmit: () => void;
-	handleReset: () => void;
-	formatFileSize: (bytes: number) => string;
-}
 
 export const FileUpload: React.FC<FileUploadProps> = ({
 	file,
