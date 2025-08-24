@@ -4,6 +4,9 @@ import logging
 from typing import Tuple, List, Dict
 import xml.etree.ElementTree as ET
 
+from app.common.exceptions import CorruptPDFError, PasswordProtectedPDFError, PDFAnalysisError
+
+
 def is_pdf_tagged(doc: fitz.Document) -> bool:
     """Sprawdza, czy dokument PDF jest otagowany."""
     try:
@@ -97,7 +100,18 @@ def analyze_pdf(file_bytes: bytes) -> dict:
     try:
         pdf_document = fitz.open(stream=file_bytes, filetype="pdf")
         
+        # Sprawdzenie, czy plik jest chroniony hasłem
+        if pdf_document.is_encrypted:
+            pdf_document.close()
+            raise PasswordProtectedPDFError()
+
         page_count = pdf_document.page_count
+        
+        # Sprawdzenie, czy dokument ma strony (prosta walidacja)
+        if page_count == 0:
+            pdf_document.close()
+            raise CorruptPDFError("Plik PDF nie zawiera żadnych stron.")
+
         tagged = is_pdf_tagged(pdf_document)
         image_info = get_image_alts(pdf_document)
         
@@ -117,9 +131,18 @@ def analyze_pdf(file_bytes: bytes) -> dict:
         
         return analysis_result
         
+    except fitz.errors.FzError as e:
+        # Ten wyjątek jest często rzucany przez PyMuPDF przy uszkodzonych plikach
+        logging.error(f"Błąd PyMuPDF podczas analizy: {e}")
+        raise CorruptPDFError()
+    except PDFAnalysisError:
+        # Przekaż nasze własne wyjątki dalej bez zmian
+        raise
     except Exception as e:
-        print(f"Error during PDF analysis: {e}")
-        return None
+        logging.error(f"Error during PDF analysis: {e}")
+        # Zamiast zwracać None, rzuć ogólny wyjątek
+        raise PDFAnalysisError(f"Wystąpił nieoczekiwany błąd serwera: {e}", "ERR_UNKNOWN")
+    
     
 # Konfiguracja logowania
 logging.basicConfig(level=logging.INFO)

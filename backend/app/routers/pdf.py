@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from app.services import pdf_analyzer
+from app.common.exceptions import PDFAnalysisError
 from datetime import datetime
 from weasyprint import HTML
 import shutil
@@ -29,17 +30,42 @@ async def upload_pdf(file: UploadFile = File(...)):
     Endpoint do przyjmowania i analizowania plików PDF.
     """
     if file.content_type != "application/pdf":
-        raise HTTPException(status_code=400, detail="Invalid file type.")
+        return JSONResponse(
+            status_code=400,
+            content={
+                "detail": {
+                    "error_code": "ERR_INVALID_FILE_TYPE",
+                    "message": "Nieprawidłowy typ pliku. Proszę przesłać plik PDF."
+                }
+            }
+        )
 
-    file_bytes = await file.read()
-    
-    analysis_result = pdf_analyzer.analyze_pdf(file_bytes)
-    
-    if analysis_result is None:
-        raise HTTPException(status_code=422, detail="Could not process the PDF file.")
-    
-    analysis_result["filename"] = file.filename
-    return analysis_result
+    try:
+        file_bytes = await file.read()
+        analysis_result = pdf_analyzer.analyze_pdf(file_bytes)
+        
+        if analysis_result is None:
+             raise HTTPException(status_code=422, detail="Could not process the PDF file.")
+
+        analysis_result["filename"] = file.filename
+        return analysis_result
+
+    except PDFAnalysisError as e:
+        return JSONResponse(
+            status_code=422, # Unprocessable Entity
+            content={"detail": {"error_code": e.error_code, "message": e.message}}
+        )
+    except Exception as e:
+        print(f"Krytyczny, nieobsłużony błąd serwera: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": {
+                    "error_code": "ERR_UNKNOWN",
+                    "message": "Wystąpił nieoczekiwany błąd wewnętrzny serwera."
+                }
+            }
+        )
 
 @router.post("/validate/pdf-ua", tags=["Validation"])
 async def validate_pdf_ua_endpoint(file: UploadFile = File(...)):
