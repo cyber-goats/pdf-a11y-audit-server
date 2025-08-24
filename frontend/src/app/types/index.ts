@@ -1,5 +1,8 @@
 import type { RefObject } from 'react';
 
+export type TabId = 'summary' | 'details' | 'recommendations';
+
+
 export interface Results {
 	filename: string;
 	page_count: number;
