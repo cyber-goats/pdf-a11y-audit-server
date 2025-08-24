@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { PdfAuditProvider } from './context/PdfAuditContext';
 
 export const metadata: Metadata = {
 	title: 'PDF Accessibility Auditor',
@@ -12,8 +13,10 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang='en'>
-			<body className='antialiased'>{children}</body>
+		<html lang='pl'>
+			<body className='antialiased'>
+				<PdfAuditProvider>{children}</PdfAuditProvider>
+			</body>
 		</html>
 	);
 }
