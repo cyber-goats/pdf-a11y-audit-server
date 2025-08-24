@@ -2,11 +2,20 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
 from app.services import pdf_analyzer
 from datetime import datetime
+from weasyprint import HTML
 import shutil
 import os
 import uuid
 import json
 import io
+from enum import Enum
+
+class ReportFormat(str, Enum):
+    json = "json"
+    html = "html"
+    pdf = "pdf"
+
+
 
 router = APIRouter()
 
@@ -108,28 +117,34 @@ async def generate_report(file: UploadFile = File(...)):
     return report
 
 @router.post("/download-report/{format}", tags=["Reports"])
-async def download_report(format: str, report_data: dict):
+async def download_report(format: ReportFormat, report_data: dict): # Zmieniony typ parametru
     """
-    Pobiera raport w wybranym formacie (json, html)
+    Pobiera raport w wybranym formacie (json, html, pdf)
     """
-    if format == "json":
+    if format == ReportFormat.json:
         content = json.dumps(report_data, indent=2, ensure_ascii=False)
         return StreamingResponse(
             io.BytesIO(content.encode()),
             media_type="application/json",
             headers={"Content-Disposition": f"attachment; filename=report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"}
         )
-    
-    elif format == "html":
+
+    elif format == ReportFormat.html:
         html_content = generate_html_report(report_data)
         return StreamingResponse(
             io.BytesIO(html_content.encode()),
             media_type="text/html",
             headers={"Content-Disposition": f"attachment; filename=report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"}
         )
-    
-    else:
-        raise HTTPException(status_code=400, detail="Unsupported format")
+
+    elif format == ReportFormat.pdf:
+        html_content = generate_html_report(report_data)
+        pdf_bytes = HTML(string=html_content).write_pdf()
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"}
+        )
 
 def calculate_accessibility_score(analysis: dict, is_pdf_ua_compliant: bool) -> dict:
     """Oblicza szczegółowy wynik dostępności"""

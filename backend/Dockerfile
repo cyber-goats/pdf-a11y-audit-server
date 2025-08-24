@@ -8,9 +8,13 @@ COPY requirements.txt .
 RUN pip uninstall -y PyFitz || true
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ZMIENIAMY PAKIET NA `docker-cli`
+# Instalujemy zależności systemowe dla WeasyPrint oraz docker-cli
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends docker-cli && \
+    apt-get install -y --no-install-recommends \
+    docker-cli \
+    libpango-1.0-0 \
+    libcairo2 \
+    libgdk-pixbuf-2.0-0 && \
     rm -rf /var/lib/apt/lists/*
 
 # Zostawiamy naszą linię weryfikacyjną, aby mieć 100% pewności, że tym razem się powiedzie
