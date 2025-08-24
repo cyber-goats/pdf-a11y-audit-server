@@ -29,3 +29,29 @@ export const getScoreColor = (score: number): string => {
 	if (score >= 50) return 'text-yellow-600';
 	return 'text-red-600';
 };
+
+export const getPriorityColor = (priority: string) => {
+	switch (priority) {
+		case 'high':
+			return 'text-red-400 bg-red-500/10 border-red-500/30';
+		case 'medium':
+			return 'text-amber-400 bg-amber-500/10 border-amber-500/30';
+		case 'low':
+			return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
+		default:
+			return 'text-gray-400 bg-gray-500/10 border-gray-500/30';
+	}
+};
+
+export const getPriorityIcon = (priority: string) => {
+	switch (priority) {
+		case 'high':
+			return '⚠️';
+		case 'medium':
+			return '⚡';
+		case 'low':
+			return 'ℹ️';
+		default:
+			return '📌';
+	}
+};
