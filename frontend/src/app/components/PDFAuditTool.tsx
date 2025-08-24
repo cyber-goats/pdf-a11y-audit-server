@@ -1,27 +1,37 @@
 'use client';
 
-import React, { useReducer, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Header } from './audit/Header';
 import { FileUpload } from './audit/FileUpload';
 import { AnalysisResults } from './audit/AnalysisResults';
 import { ErrorMessage } from './audit/ErrorMessage';
 import { ReportView } from './audit/ReportView';
-import { initialState, pdfAuditReducer } from './audit/state';
+import {
+	usePdfAuditState,
+	usePdfAuditDispatch,
+} from '@/app/context/PdfAuditContext';
+import {
+	analyzePdfAction,
+	generateReportAction,
+	downloadReportAction,
+} from '@/app/context/actions';
 import {
 	formatFileSize,
 	getAccessibilityScore,
 	getScoreColor,
 } from '@/app/utils/helpers';
-import { analyzePdf, generateReport, downloadReport } from '@/app/services/api';
 
 const PDFAuditTool = () => {
-	const [state, dispatch] = useReducer(pdfAuditReducer, initialState);
+	// Krok 1: Pobieramy stan i dispatch z globalnego kontekstu
+	const state = usePdfAuditState();
+	const dispatch = usePdfAuditDispatch();
 	const { status, file, results, reportData, showReport, error, progress } =
 		state;
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const dropZoneRef = useRef<HTMLDivElement>(null);
 
+	// Krok 2: Definiujemy funkcje obsługi, które wywołują kreatory akcji
 	const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const selectedFile = event.target.files?.[0];
 		if (selectedFile) {
@@ -51,50 +61,21 @@ const PDFAuditTool = () => {
 		}
 	};
 
-	const handleSubmit = async () => {
-		if (!file) return;
-		dispatch({ type: 'START_ANALYSIS' });
-
-		// Symulacja postępu 
-		const progressInterval = setInterval(() => {
-			dispatch({
-				type: 'SET_PROGRESS',
-				payload: Math.min(state.progress + 10, 90),
-			});
-		}, 200);
-
-		try {
-			const data = await analyzePdf(file); 
-			dispatch({ type: 'ANALYSIS_SUCCESS', payload: data });
-		} catch (err) {
-			dispatch({ type: 'SET_ERROR', payload: (err as Error).message });
-		} finally {
-			clearInterval(progressInterval);
+	const handleSubmit = () => {
+		if (file) {
+			analyzePdfAction(dispatch, file);
 		}
 	};
 
-	const handleGenerateReport = async () => {
-		if (!file) return;
-		dispatch({ type: 'START_REPORT_GENERATION' });
-		try {
-			const data = await generateReport(file); 
-			dispatch({ type: 'REPORT_SUCCESS', payload: data });
-			setTimeout(() => {
-				document
-					.getElementById('report-section')
-					?.scrollIntoView({ behavior: 'smooth' });
-			}, 100);
-		} catch (err) {
-			dispatch({ type: 'SET_ERROR', payload: (err as Error).message });
+	const handleGenerateReport = () => {
+		if (file) {
+			generateReportAction(dispatch, file);
 		}
 	};
 
-	const handleDownloadReport = async (format: string) => {
-		if (!reportData) return;
-		try {
-			await downloadReport(format, reportData); 
-		} catch (err) {
-			dispatch({ type: 'SET_ERROR', payload: (err as Error).message });
+	const handleDownloadReport = (format: string) => {
+		if (reportData) {
+			downloadReportAction(dispatch, format, reportData);
 		}
 	};
 
@@ -146,9 +127,7 @@ const PDFAuditTool = () => {
 							handleReset={handleReset}
 							formatFileSize={formatFileSize}
 						/>
-
 						<ErrorMessage error={error} />
-
 						{results && (
 							<>
 								<AnalysisResults
@@ -171,7 +150,6 @@ const PDFAuditTool = () => {
 								)}
 							</>
 						)}
-
 						{showReport && reportData && (
 							<div id='report-section'>
 								<ReportView
