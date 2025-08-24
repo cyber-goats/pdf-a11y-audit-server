@@ -2,6 +2,17 @@ import type { RefObject } from 'react';
 
 export type TabId = 'summary' | 'details' | 'recommendations';
 
+export interface ReportTab {
+	id: TabId;
+	label: string;
+	icon: string;
+}
+
+export interface TabButtonProps {
+	tab: ReportTab;
+	activeTab: TabId;
+	onClick: (id: TabId) => void;
+}
 
 export interface Results {
 	filename: string;
