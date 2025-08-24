@@ -1,22 +1,7 @@
 import React from 'react';
 import { CheckIcon, XIcon } from './Icons';
+import type { AnalysisResultsProps } from '@/app/types';
 
-export type Results = {
-	filename: string;
-	page_count: number;
-	is_tagged: boolean;
-	contains_text: boolean;
-	image_info?: {
-		image_count: number;
-		images_with_alt: number;
-	};
-};
-
-interface AnalysisResultsProps {
-	results: Results;
-	getAccessibilityScore: () => number;
-	getScoreColor: (score: number) => string;
-}
 
 export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
 	results,

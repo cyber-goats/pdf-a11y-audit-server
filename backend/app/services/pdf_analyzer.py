@@ -1,9 +1,8 @@
 import pymupdf as fitz
 import subprocess
 import logging
-from typing import Tuple
+from typing import Tuple, List, Dict
 import xml.etree.ElementTree as ET
-from typing import List, Dict
 
 def is_pdf_tagged(doc: fitz.Document) -> bool:
     """Sprawdza, czy dokument PDF jest otagowany."""
@@ -36,6 +35,7 @@ def get_image_alts(doc: fitz.Document) -> dict:
         "images_without_alt": 0, "alt_texts": []
     }
     
+    # Zliczamy wszystkie obrazy
     for page in doc:
         image_analysis["image_count"] += len(page.get_images(full=True))
         
@@ -43,20 +43,51 @@ def get_image_alts(doc: fitz.Document) -> dict:
         image_analysis["images_without_alt"] = image_analysis["image_count"]
         return image_analysis
 
+    # Alternatywne podejście - sprawdzamy metadane obrazów
     try:
-        # PRAWIDŁOWA NAZWA FUNKCJI
-        struct_tree = doc.structure_csirt()
         all_alt_texts = []
         
-        for element in struct_tree:
-            find_all_alts_recursively(element, all_alt_texts)
+        # Próbujemy różne metody dostępu do struktury
+        for page_num in range(len(doc)):
+            page = doc[page_num]
+            
+            # Sprawdzamy obrazy na stronie
+            image_list = page.get_images(full=True)
+            
+            for img_index, img in enumerate(image_list):
+                try:
+                    # Próbujemy pobrać xref obrazu
+                    xref = img[0]
+                    
+                    # Sprawdzamy czy obraz ma alt text w metadanych
+                    img_dict = doc.xref_object(xref)
+                    if "/Alt" in img_dict:
+                        alt_text = img_dict["/Alt"]
+                        if isinstance(alt_text, str) and alt_text.strip():
+                            all_alt_texts.append(alt_text)
+                except:
+                    continue
+        
+        # Alternatywna metoda - sprawdzamy marked content
+        try:
+            for page in doc:
+                # Pobieramy tekst z tagami
+                blocks = page.get_text("dict")
+                for block in blocks.get("blocks", []):
+                    if block.get("type") == 1:  # Image block
+                        # Sprawdzamy czy jest alt text
+                        if "alt" in block:
+                            all_alt_texts.append(block["alt"])
+        except:
+            pass
         
         image_analysis["alt_texts"] = all_alt_texts
         image_analysis["images_with_alt"] = len(all_alt_texts)
-        image_analysis["images_without_alt"] = image_analysis["image_count"] - len(all_alt_texts)
+        image_analysis["images_without_alt"] = max(0, image_analysis["image_count"] - len(all_alt_texts))
 
     except Exception as e:
-        print(f"BŁĄD KRYTYCZNY: {e}")
+        print(f"Nie można analizować alt tekstów: {e}")
+        # Jeśli nie możemy analizować, zakładamy że brak alt tekstów
         image_analysis["images_without_alt"] = image_analysis["image_count"]
 
     return image_analysis
@@ -81,7 +112,7 @@ def analyze_pdf(file_bytes: bytes) -> dict:
         analysis_result = {
             "page_count": page_count, "is_tagged": tagged,
             "contains_text": contains_text, "image_info": image_info,
-            "extracted_text_preview": full_text[:500] + "..."
+            "extracted_text_preview": full_text[:500] + "..." if len(full_text) > 500 else full_text
         }
         
         return analysis_result
@@ -96,7 +127,6 @@ logger = logging.getLogger(__name__)
 
 # Nazwa kontenera zdefiniowana w docker-compose.yml
 VERAPDF_CONTAINER_NAME = "verapdf_service"
-
 
 def validate_pdf_ua(pdf_filename: str) -> Tuple[bool, str]:
     """
