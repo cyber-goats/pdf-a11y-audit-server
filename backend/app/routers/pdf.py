@@ -10,6 +10,8 @@ import uuid
 import json
 import io
 from enum import Enum
+from app.services.redis_client import redis_client
+
 
 class ReportFormat(str, Enum):
     json = "json"
@@ -170,6 +172,98 @@ async def download_report(format: ReportFormat, report_data: dict): # Zmieniony 
             io.BytesIO(pdf_bytes),
             media_type="application/pdf",
             headers={"Content-Disposition": f"attachment; filename=report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"}
+        )
+    
+@router.get("/cache/status", tags=["Cache Management"])
+async def get_cache_status():
+    """
+    Endpoint do monitorowania statusu i metryk cache.
+    """
+    try:
+        metrics = redis_client.get_metrics()
+        return {
+            "status": "success",
+            "redis_available": metrics['redis_available'],
+            "cache_metrics": metrics,
+            "cache_config": {
+                "version": redis_client.cache_version,
+                "max_file_size_mb": redis_client.max_file_size_for_cache / 1024 / 1024,
+                "default_ttl_seconds": 3600
+            }
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": f"Failed to get cache status: {str(e)}",
+                "redis_available": False
+            }
+        )
+
+@router.delete("/cache/clear", tags=["Cache Management"])
+async def clear_cache(pattern: str = None):
+    """
+    Endpoint do czyszczenia cache.
+    Opcjonalnie można podać wzorzec kluczy do usunięcia.
+    """
+    try:
+        if pattern and not pattern.startswith("pdf_analysis:"):
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "error", 
+                    "message": "Invalid pattern. Must start with 'pdf_analysis:'"
+                }
+            )
+        
+        deleted_count = redis_client.invalidate_cache(pattern)
+        
+        return {
+            "status": "success",
+            "message": f"Cleared {deleted_count} cache entries",
+            "deleted_count": deleted_count,
+            "pattern": pattern or "all pdf_analysis entries"
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": f"Failed to clear cache: {str(e)}"
+            }
+        )
+
+@router.post("/cache/cleanup", tags=["Cache Management"])
+async def cleanup_old_cache(max_age_hours: int = 24):
+    """
+    Endpoint do czyszczenia starych wpisów cache.
+    """
+    if max_age_hours < 1 or max_age_hours > 168:  # 1h - 1 tydzień
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "error",
+                "message": "max_age_hours must be between 1 and 168"
+            }
+        )
+    
+    try:
+        deleted_count = redis_client.cleanup_old_cache(max_age_hours)
+        
+        return {
+            "status": "success",
+            "message": f"Cleaned up {deleted_count} old cache entries",
+            "deleted_count": deleted_count,
+            "max_age_hours": max_age_hours
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": f"Failed to cleanup cache: {str(e)}"
+            }
         )
 
 def calculate_accessibility_score(analysis: dict, is_pdf_ua_compliant: bool) -> dict:

@@ -5,6 +5,7 @@ from typing import Tuple, List, Dict
 import xml.etree.ElementTree as ET
 
 from app.common.exceptions import CorruptPDFError, PasswordProtectedPDFError, PDFAnalysisError
+from app.services.redis_client import redis_client
 
 
 def is_pdf_tagged(doc: fitz.Document) -> bool:
@@ -96,7 +97,37 @@ def get_image_alts(doc: fitz.Document) -> dict:
     return image_analysis
 
 def analyze_pdf(file_bytes: bytes) -> dict:
-    """Główna funkcja analityczna."""
+    """Główna funkcja analityczna z inteligentnym cache."""
+    
+    # Sprawdź rozmiar pliku
+    file_size = len(file_bytes)
+    logger.info(f"Starting PDF analysis for file of size: {file_size} bytes")
+    
+    # Cache logic z pełną obsługą błędów
+    cached_result = None
+    cache_key = None
+    should_cache = redis_client.should_cache_file(file_size)
+    
+    if should_cache:
+        try:
+            cache_key = redis_client.generate_file_key(file_bytes)
+            cached_result = redis_client.get_cache(cache_key)
+            
+            if cached_result:
+                logger.info(f"Returning cached result for {cache_key}")
+                # Dodaj informację o cache do wyniku
+                cached_result['_cache_info'] = {
+                    'from_cache': True,
+                    'cache_key': cache_key
+                }
+                return cached_result
+                
+        except Exception as e:
+            logger.warning(f"Redis cache read failed, proceeding without cache: {e}")
+            cache_key = None
+    else:
+        logger.info(f"File too large ({file_size} bytes) for caching, proceeding without cache")
+
     try:
         pdf_document = fitz.open(stream=file_bytes, filetype="pdf")
         
@@ -112,6 +143,8 @@ def analyze_pdf(file_bytes: bytes) -> dict:
             pdf_document.close()
             raise CorruptPDFError("Plik PDF nie zawiera żadnych stron.")
 
+        logger.info(f"Analyzing PDF with {page_count} pages")
+        
         tagged = is_pdf_tagged(pdf_document)
         image_info = get_image_alts(pdf_document)
         
@@ -124,25 +157,41 @@ def analyze_pdf(file_bytes: bytes) -> dict:
         contains_text = len(full_text.strip()) > 0
         
         analysis_result = {
-            "page_count": page_count, "is_tagged": tagged,
-            "contains_text": contains_text, "image_info": image_info,
-            "extracted_text_preview": full_text[:500] + "..." if len(full_text) > 500 else full_text
+            "page_count": page_count, 
+            "is_tagged": tagged,
+            "contains_text": contains_text, 
+            "image_info": image_info,
+            "extracted_text_preview": full_text[:500] + "..." if len(full_text) > 500 else full_text,
+            "_cache_info": {
+                'from_cache': False,
+                'cache_key': cache_key,
+                'cacheable': should_cache
+            }
         }
+
+        # Zapisz do cache - ale tylko jeśli można i powinno się
+        if should_cache and cache_key:
+            try:
+                cache_success = redis_client.set_cache(cache_key, analysis_result, 3600)
+                if cache_success:
+                    logger.info(f"Successfully cached analysis result for {cache_key}")
+                else:
+                    logger.warning(f"Failed to cache analysis result for {cache_key}")
+            except Exception as e:
+                logger.warning(f"Redis cache write failed, but analysis completed: {e}")
         
+        logger.info("PDF analysis completed successfully")
         return analysis_result
         
     except fitz.errors.FzError as e:
-        # Ten wyjątek jest często rzucany przez PyMuPDF przy uszkodzonych plikach
-        logging.error(f"Błąd PyMuPDF podczas analizy: {e}")
+        logger.error(f"Błąd PyMuPDF podczas analizy: {e}")
         raise CorruptPDFError()
     except PDFAnalysisError:
         # Przekaż nasze własne wyjątki dalej bez zmian
         raise
     except Exception as e:
-        logging.error(f"Error during PDF analysis: {e}")
-        # Zamiast zwracać None, rzuć ogólny wyjątek
-        raise PDFAnalysisError(f"Wystąpił nieoczekiwany błąd serwera: {e}", "ERR_UNKNOWN")
-    
+        logger.error(f"Error during PDF analysis: {e}")
+        raise PDFAnalysisError(f"Wystąpił nieoczekiwany błąd serwera: {e}", "ERR_UNKNOWN")  
     
 # Konfiguracja logowania
 logging.basicConfig(level=logging.INFO)
