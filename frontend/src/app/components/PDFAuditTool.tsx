@@ -10,11 +10,7 @@ import {
 	usePdfAuditState,
 	usePdfAuditDispatch,
 } from '@/app/context/PdfAuditContext';
-import {
-	analyzePdfAction,
-	generateReportAction,
-	downloadReportAction,
-} from '@/app/context/actions';
+import { analyzePdfAction, downloadReportAction } from '@/app/context/actions';
 import {
 	formatFileSize,
 	getAccessibilityScore,
@@ -25,11 +21,14 @@ const PDFAuditTool = () => {
 	// Krok 1: Pobieramy stan i dispatch z globalnego kontekstu
 	const state = usePdfAuditState();
 	const dispatch = usePdfAuditDispatch();
-	const { status, file, results, reportData, showReport, error, progress } =
-		state;
+	const { status, file, results, reportData, error, progress } = state;
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const dropZoneRef = useRef<HTMLDivElement>(null);
+
+	const stateRef = useRef(state);
+	stateRef.current = state;
+	const getState = () => stateRef.current;
 
 	// Krok 2: Definiujemy funkcje obsługi, które wywołują kreatory akcji
 	const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,13 +62,7 @@ const PDFAuditTool = () => {
 
 	const handleSubmit = () => {
 		if (file) {
-			analyzePdfAction(dispatch, file);
-		}
-	};
-
-	const handleGenerateReport = () => {
-		if (file) {
-			generateReportAction(dispatch, file);
+			analyzePdfAction(dispatch, file, getState);
 		}
 	};
 
@@ -128,29 +121,18 @@ const PDFAuditTool = () => {
 							formatFileSize={formatFileSize}
 						/>
 						<ErrorMessage error={error} />
+
+						{/* Ten blok pokazuje WSTĘPNE wyniki, gdy tylko są dostępne */}
 						{results && (
-							<>
-								<AnalysisResults
-									results={results}
-									getAccessibilityScore={() => currentAccessibilityScore}
-									getScoreColor={() => getScoreColor(currentAccessibilityScore)}
-								/>
-								{!showReport && (
-									<div className='flex justify-center'>
-										<button
-											onClick={handleGenerateReport}
-											disabled={isLoading}
-											className='inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200'
-										>
-											{status === 'generating_report'
-												? 'Generowanie raportu...'
-												: 'Generuj szczegółowy raport'}
-										</button>
-									</div>
-								)}
-							</>
+							<AnalysisResults
+								results={results}
+								getAccessibilityScore={() => currentAccessibilityScore}
+								getScoreColor={() => getScoreColor(currentAccessibilityScore)}
+							/>
 						)}
-						{showReport && reportData && (
+
+						{/* Ten blok pokazuje PEŁNY raport, gdy tylko jest dostępny */}
+						{reportData && (
 							<div id='report-section'>
 								<ReportView
 									reportData={reportData}
@@ -158,12 +140,10 @@ const PDFAuditTool = () => {
 								/>
 								<div className='flex justify-center mt-4'>
 									<button
-										onClick={() =>
-											dispatch({ type: 'TOGGLE_REPORT', payload: false })
-										}
+										onClick={handleReset} // Zmieniliśmy funkcję na resetowanie
 										className='px-6 py-3 bg-white/10 backdrop-blur-sm text-white font-medium rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-200'
 									>
-										Ukryj raport
+										Analizuj kolejny plik
 									</button>
 								</div>
 							</div>

@@ -1,4 +1,4 @@
-import type { Results, ReportData } from '@/app/types';
+import type { Results, ReportData, AnalysisStatusResponse } from '@/app/types';
 
 // 1. Definiujemy kształt naszego stanu
 export interface AppState {
@@ -11,6 +11,7 @@ export interface AppState {
 		| 'success'
 		| 'error';
 	file: File | null;
+	taskId: string | null;
 	results: Results | null;
 	reportData: ReportData | null;
 	showReport: boolean;
@@ -22,6 +23,7 @@ export interface AppState {
 export const initialState: AppState = {
 	status: 'idle',
 	file: null,
+	taskId: null,
 	results: null,
 	reportData: null,
 	showReport: false,
@@ -34,9 +36,9 @@ type Action =
 	| { type: 'SELECT_FILE'; payload: File }
 	| { type: 'START_DRAG' }
 	| { type: 'END_DRAG' }
-	| { type: 'START_ANALYSIS' }
+	| { type: 'START_ANALYSIS'; payload: { taskId: string } }
 	| { type: 'SET_PROGRESS'; payload: number }
-	| { type: 'ANALYSIS_SUCCESS'; payload: Results }
+	| { type: 'ANALYSIS_SUCCESS'; payload: AnalysisStatusResponse }
 	| { type: 'START_REPORT_GENERATION' }
 	| { type: 'REPORT_SUCCESS'; payload: ReportData }
 	| { type: 'SET_ERROR'; payload: string }
@@ -48,20 +50,34 @@ type Action =
 export function pdfAuditReducer(state: AppState, action: Action): AppState {
 	switch (action.type) {
 		case 'SELECT_FILE':
-			return { ...initialState, file: action.payload };
+			return { ...initialState, file: action.payload, taskId: null };
 		case 'START_DRAG':
 			return { ...state, status: 'dragging' };
 		case 'END_DRAG':
 			return { ...state, status: 'idle' };
 		case 'START_ANALYSIS':
-			return { ...state, status: 'analyzing', error: null, progress: 0 };
+			return {
+				...state,
+				status: 'analyzing',
+				error: null,
+				progress: 10,
+				taskId: action.payload.taskId,
+			};
 		case 'SET_PROGRESS':
 			return { ...state, progress: action.payload };
 		case 'ANALYSIS_SUCCESS':
+		const report = action.payload.result;
+		const resultsData: Results | null = report
+				? {
+						filename: report.metadata.filename, 
+						...report.basic_analysis, 
+				  }
+				: null;
 			return {
 				...state,
 				status: 'success',
-				results: action.payload,
+				results: resultsData, 
+				reportData: report ?? null,
 				progress: 100,
 			};
 		case 'START_REPORT_GENERATION':
