@@ -17,6 +17,22 @@ services:
       - verapdf
       - redis
 
+  worker:
+    build: ./backend
+    command: celery -A app.tasks.celery_app worker --loglevel=info
+    volumes:
+      - ./storage:/app/storage
+      - ./reports:/app/reports
+      - pdf_files:/tmp/pdfs
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - PYTHONPATH=/app
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-}@redis:6379/0
+    networks:
+      - app-network
+    depends_on:
+      - redis
+
   frontend:
     build: ./frontend
     ports:
