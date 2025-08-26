@@ -106,3 +106,22 @@ export interface ReportViewProps {
 export interface ErrorMessageProps {
 	error: string | null;
 }
+
+
+// TYPY DLA ASYNCHRONICZNEGO API
+
+/**
+ * Odpowiedź z endpointu POST /upload/
+ */
+export interface AnalysisTaskResponse {
+	task_id: string;
+}
+
+/**
+ * Odpowiedź z endpointu GET /analysis/{task_id}
+ */
+export interface AnalysisStatusResponse {
+	status: 'PENDING' | 'STARTED' | 'SUCCESS' | 'FAILURE';
+	result?: ReportData; // Wynik będzie pełnym raportem, gdy status to SUCCESS
+	error_message?: string; // Wiadomość o błędzie, gdy status to FAILURE
+}
