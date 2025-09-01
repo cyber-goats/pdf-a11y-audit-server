@@ -211,7 +211,7 @@ def validate_pdf_ua(pdf_filename: str) -> Tuple[bool, str]:
         "docker", "exec", VERAPDF_CONTAINER_NAME,
         "/opt/verapdf/verapdf",
         "--format", "xml",
-        "--flavour", "2b",
+        "--flavour", "ua1",
         shared_path
     ]
 
