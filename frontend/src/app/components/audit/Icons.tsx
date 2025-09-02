@@ -1,3 +1,5 @@
+import React from 'react'; 
+
 export const UploadIcon = () => (
 	<svg
 		className='w-10 h-10 text-white'
