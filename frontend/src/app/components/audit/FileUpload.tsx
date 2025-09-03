@@ -19,19 +19,20 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 	handleReset,
 	formatFileSize,
 }) => (
-	<div className='bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20 shadow-2xl'>
+	<section className='bg-slate-800 rounded-2xl p-8 shadow-xl border border-slate-700'>
+		<h2 className='sr-only'>Wybór pliku do analizy</h2>
 		<div
 			ref={dropZoneRef}
 			onDragEnter={handleDragEnter}
 			onDragOver={handleDragOver}
 			onDragLeave={handleDragLeave}
 			onDrop={handleDrop}
-			className={`relative border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 ${
+			className={`relative border-2 border-dashed rounded-xl p-12 transition-all duration-300 ${
 				isDragging
-					? 'border-purple-400 bg-purple-50/10'
+					? 'border-indigo-400 bg-indigo-950/30'
 					: file
-					? 'border-green-400 bg-green-50/10'
-					: 'border-gray-400 hover:border-purple-400 bg-white/5'
+					? 'border-green-500 bg-green-950/20'
+					: 'border-slate-600 hover:border-slate-500 bg-slate-900/50'
 			}`}
 		>
 			<input
@@ -45,21 +46,24 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 				aria-describedby='upload-help'
 			/>
 			{!file ? (
-				<>
+				<div className='flex flex-col items-center justify-center'>
 					<div className='mb-6'>
-						<div className='inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl shadow-lg mb-4'>
+						<div className='inline-flex items-center justify-center w-20 h-20 bg-indigo-600 rounded-2xl shadow-lg'>
 							<UploadIcon />
 						</div>
 					</div>
+
 					<label
 						htmlFor='pdf-upload'
-						className='inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 cursor-pointer'
+						className='inline-flex items-center justify-center gap-2 px-12 py-4 bg-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:bg-indigo-700 transform hover:scale-105 transition-all duration-200 cursor-pointer focus:ring-4 focus:ring-indigo-400'
+						style={{ minWidth: 'fit-content' }}
 					>
 						<svg
-							className='w-5 h-5'
+							className='w-5 h-5 flex-shrink-0'
 							fill='none'
 							stroke='currentColor'
 							viewBox='0 0 24 24'
+							aria-hidden='true'
 						>
 							<path
 								strokeLinecap='round'
@@ -68,66 +72,80 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 								d='M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12'
 							/>
 						</svg>
-						Wybierz plik PDF
+						<span>Wybierz plik PDF</span>
 					</label>
-					<p className='mt-4 text-gray-300'>
+
+					<p className='mt-4 text-slate-200 font-medium text-center'>
 						lub przeciągnij i upuść plik tutaj
 					</p>
-					<p id='upload-help' className='mt-2 text-sm text-gray-400'>
+					<p
+						id='upload-help'
+						className='mt-2 text-sm text-slate-400 text-center'
+					>
 						Maksymalny rozmiar: 10MB • Format: PDF
 					</p>
-				</>
+				</div>
 			) : (
-				<div className='space-y-4'>
-					<div className='inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg'>
-						<FileIcon />
+				<div className='flex flex-col items-center justify-center'>
+					<div className='mb-4'>
+						<div className='inline-flex items-center justify-center w-20 h-20 bg-green-600 rounded-2xl shadow-lg'>
+							<FileIcon />
+						</div>
 					</div>
-					<div className='bg-white/10 backdrop-blur-sm rounded-xl p-4 max-w-md mx-auto'>
+
+					<div className='bg-slate-700 rounded-xl p-4 max-w-md mx-auto text-center'>
 						<p className='font-semibold text-white text-lg'>{file.name}</p>
-						<p className='text-gray-300 text-sm mt-1'>
+						<p className='text-slate-300 text-sm mt-1'>
 							{formatFileSize(file.size)}
 						</p>
 					</div>
+
 					<button
 						onClick={() =>
 							(
 								fileInputRef as React.RefObject<HTMLInputElement>
 							).current?.click()
 						}
-						className='text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors'
+						className='mt-4 text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-colors underline focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-800 rounded px-2 py-1'
 					>
 						Zmień plik
 					</button>
 				</div>
 			)}
 		</div>
+
 		<div className='flex gap-4 mt-8'>
 			<button
 				onClick={handleSubmit}
 				disabled={!file || isLoading}
-				className='flex-1 inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200'
+				aria-busy={isLoading}
+				className='flex-1 inline-flex items-center justify-center gap-2 px-8 py-4 bg-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:bg-indigo-700 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200 focus:ring-4 focus:ring-indigo-400'
 			>
 				{isLoading ? (
 					<>
-						<LoaderIcon /> Analizuję...
+						<LoaderIcon />
+						<span>Analizuję...</span>
 					</>
 				) : (
 					<>
-						<SparklesIcon /> Rozpocznij analizę
+						<SparklesIcon />
+						<span>Rozpocznij analizę</span>
 					</>
 				)}
 			</button>
+
 			{(file || results) && (
 				<button
 					onClick={handleReset}
 					disabled={isLoading}
-					className='px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200'
+					className='inline-flex items-center justify-center px-8 py-4 bg-slate-700 text-white font-semibold rounded-xl hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200 focus:ring-4 focus:ring-slate-400'
 				>
 					<svg
 						className='w-5 h-5'
 						fill='none'
 						stroke='currentColor'
 						viewBox='0 0 24 24'
+						aria-label='Resetuj'
 					>
 						<path
 							strokeLinecap='round'
@@ -139,18 +157,26 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 				</button>
 			)}
 		</div>
+
 		{isLoading && (
 			<div className='mt-6'>
-				<div className='h-2 bg-white/10 rounded-full overflow-hidden'>
+				<div
+					className='h-2 bg-slate-700 rounded-full overflow-hidden'
+					role='progressbar'
+					aria-valuenow={progress}
+					aria-valuemin={0}
+					aria-valuemax={100}
+					aria-label='Postęp analizy dokumentu'
+				>
 					<div
-						className='h-full bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-300 ease-out'
+						className='h-full bg-indigo-600 transition-all duration-300 ease-out'
 						style={{ width: `${progress}%` }}
 					/>
 				</div>
-				<p className='text-center text-sm text-gray-300 mt-2'>
+				<p className='text-center text-sm text-slate-300 mt-2'>
 					Analizuję dokument... {progress}%
 				</p>
 			</div>
 		)}
-	</div>
+	</section>
 );

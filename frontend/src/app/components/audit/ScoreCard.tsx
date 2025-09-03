@@ -2,9 +2,9 @@ import React from 'react';
 import type { ReportData } from '@/app/types';
 
 const getScoreGradient = (percentage: number) => {
-	if (percentage >= 80) return 'from-emerald-400 to-green-500';
-	if (percentage >= 50) return 'from-amber-400 to-yellow-500';
-	return 'from-red-400 to-rose-500';
+	if (percentage >= 80) return 'text-green-400';
+	if (percentage >= 50) return 'text-yellow-400';
+	return 'text-red-400';
 };
 
 interface ScoreCardProps {
@@ -13,28 +13,24 @@ interface ScoreCardProps {
 }
 
 export const ScoreCard: React.FC<ScoreCardProps> = ({ score, filename }) => (
-	<div className='relative bg-gradient-to-br from-white/10 to-white/5 rounded-2xl p-8 overflow-hidden'>
-		<div className='absolute inset-0 bg-gradient-to-br from-purple-600/10 to-pink-600/10'></div>
-		<div className='relative text-center'>
+	<div className='bg-slate-900 rounded-xl p-8 border border-slate-700'>
+		<div className='text-center'>
 			<div
-				className={`text-5xl font-bold bg-gradient-to-r ${getScoreGradient(
+				className={`text-5xl font-bold ${getScoreGradient(
 					score.percentage
-				)} bg-clip-text text-transparent mb-4`}
+				)} mb-4`}
+				aria-label={`Wynik dostępności: ${score.percentage} procent`}
 			>
 				{score.percentage}%
 			</div>
 			<div className='space-y-2'>
 				<p className='text-2xl font-semibold text-white'>
 					Poziom dostępności:{' '}
-					<span
-						className={`bg-gradient-to-r ${getScoreGradient(
-							score.percentage
-						)} bg-clip-text text-transparent`}
-					>
+					<span className={getScoreGradient(score.percentage)}>
 						{score.level}
 					</span>
 				</p>
-				<p className='text-gray-400'>{filename}</p>
+				<p className='text-slate-400'>{filename}</p>
 			</div>
 		</div>
 	</div>

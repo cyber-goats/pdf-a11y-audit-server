@@ -13,7 +13,7 @@ export const PdfUaValidationErrors: React.FC<PdfUaValidationErrorsProps> = ({
 	}
 
 	return (
-		<div className='bg-gradient-to-br from-white/10 to-white/5 rounded-2xl p-6 border border-white/10'>
+		<div className='bg-slate-900 rounded-xl p-6 border border-slate-700'>
 			<h3 className='text-xl font-semibold text-white mb-6'>
 				Błędy zgodności PDF/UA ({failedRules.length})
 			</h3>
@@ -21,12 +21,12 @@ export const PdfUaValidationErrors: React.FC<PdfUaValidationErrorsProps> = ({
 				{failedRules.map((rule, idx) => (
 					<div
 						key={idx}
-						className='bg-white/5 rounded-xl p-4 border border-white/10'
+						className='bg-slate-800 rounded-lg p-4 border border-slate-700'
 					>
 						<p className='text-white text-sm leading-relaxed'>
 							{rule.description}
 						</p>
-						<p className='text-xs text-gray-400 mt-2'>
+						<p className='text-xs text-slate-400 mt-2'>
 							Klauzula: {rule.clause}
 						</p>
 					</div>

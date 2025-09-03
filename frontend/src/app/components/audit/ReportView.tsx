@@ -15,12 +15,17 @@ const TabButton: React.FC<TabButtonProps> = ({ tab, activeTab, onClick }) => (
 		onClick={() => onClick(tab.id)}
 		className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
 			activeTab === tab.id
-				? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-				: 'text-gray-300 hover:bg-white/10'
+				? 'bg-indigo-600 text-white shadow-lg'
+				: 'text-slate-300 hover:bg-slate-700 hover:text-white'
 		}`}
+		aria-current={activeTab === tab.id ? 'page' : undefined}
+		role='tab'
+		aria-selected={activeTab === tab.id}
 	>
 		<span className='flex items-center justify-center gap-2'>
-			<span className='text-lg'>{tab.icon}</span>
+			<span className='text-lg' aria-hidden='true'>
+				{tab.icon}
+			</span>
 			<span className='hidden sm:inline'>{tab.label}</span>
 		</span>
 	</button>
@@ -33,14 +38,14 @@ export const ReportView: React.FC<ReportViewProps> = ({
 	const [activeTab, setActiveTab] = useState<TabId>('summary');
 
 	return (
-		<div className='bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg rounded-3xl border border-white/20 shadow-2xl overflow-hidden'>
-			<div className='bg-gradient-to-r from-purple-600/20 to-pink-600/20 p-8 border-b border-white/10'>
+		<section className='bg-slate-800 rounded-2xl shadow-xl border border-slate-700 overflow-hidden'>
+			<div className='bg-slate-900 p-8 border-b border-slate-700'>
 				<div className='flex flex-col sm:flex-row justify-between items-center gap-4'>
 					<div>
 						<h2 className='text-3xl font-bold text-white mb-2'>
 							Raport Dostępności
 						</h2>
-						<p className='text-gray-300 text-sm'>
+						<p className='text-slate-300 text-sm'>
 							Wygenerowano:{' '}
 							{new Date(reportData.metadata.analysis_date).toLocaleString(
 								'pl-PL'
@@ -50,19 +55,22 @@ export const ReportView: React.FC<ReportViewProps> = ({
 					<div className='flex gap-2'>
 						<button
 							onClick={() => onDownload('json')}
-							className='px-5 py-2.5 bg-blue-500/20 text-blue-300 rounded-xl hover:bg-blue-500/30 border border-blue-500/30'
+							aria-label='Pobierz raport w formacie JSON'
+							className='px-5 py-2.5 bg-blue-900/50 text-blue-300 rounded-xl hover:bg-blue-900/70 border border-blue-700 transition-colors focus:ring-4 focus:ring-blue-400'
 						>
 							JSON
 						</button>
 						<button
 							onClick={() => onDownload('html')}
-							className='px-5 py-2.5 bg-emerald-500/20 text-emerald-300 rounded-xl hover:bg-emerald-500/30 border border-emerald-500/30'
+							aria-label='Pobierz raport w formacie HTML'
+							className='px-5 py-2.5 bg-emerald-900/50 text-emerald-300 rounded-xl hover:bg-emerald-900/70 border border-emerald-700 transition-colors focus:ring-4 focus:ring-emerald-400'
 						>
 							HTML
 						</button>
 						<button
 							onClick={() => onDownload('pdf')}
-							className='px-5 py-2.5 bg-red-500/20 text-red-300 rounded-xl hover:bg-red-500/30 border border-red-500/30'
+							aria-label='Pobierz raport w formacie PDF'
+							className='px-5 py-2.5 bg-red-900/50 text-red-300 rounded-xl hover:bg-red-900/70 border border-red-700 transition-colors focus:ring-4 focus:ring-red-400'
 						>
 							PDF
 						</button>
@@ -71,7 +79,11 @@ export const ReportView: React.FC<ReportViewProps> = ({
 			</div>
 
 			<div className='px-8 pt-6'>
-				<div className='flex gap-1 p-1 bg-white/5 rounded-xl'>
+				<div
+					className='flex gap-1 p-1 bg-slate-900 rounded-xl'
+					role='tablist'
+					aria-label='Sekcje raportu'
+				>
 					{REPORT_TABS.map((tab) => (
 						<TabButton
 							key={tab.id}
@@ -83,7 +95,7 @@ export const ReportView: React.FC<ReportViewProps> = ({
 				</div>
 			</div>
 
-			<div className='p-8'>
+			<div className='p-8' role='tabpanel' aria-labelledby={`tab-${activeTab}`}>
 				{activeTab === 'summary' && (
 					<div className='space-y-6 animate-fadeIn'>
 						<ScoreCard
@@ -112,6 +124,6 @@ export const ReportView: React.FC<ReportViewProps> = ({
 					</div>
 				)}
 			</div>
-		</div>
+		</section>
 	);
 };

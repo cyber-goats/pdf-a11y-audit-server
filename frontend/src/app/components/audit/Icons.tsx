@@ -1,11 +1,10 @@
-import React from 'react'; 
-
 export const UploadIcon = () => (
 	<svg
 		className='w-10 h-10 text-white'
 		fill='none'
 		stroke='currentColor'
 		viewBox='0 0 24 24'
+		aria-hidden='true'
 	>
 		<path
 			strokeLinecap='round'
@@ -22,6 +21,7 @@ export const FileIcon = () => (
 		fill='none'
 		stroke='currentColor'
 		viewBox='0 0 24 24'
+		aria-hidden='true'
 	>
 		<path
 			strokeLinecap='round'
@@ -38,6 +38,7 @@ export const ShieldIcon = () => (
 		fill='none'
 		stroke='currentColor'
 		viewBox='0 0 24 24'
+		aria-hidden='true'
 	>
 		<path
 			strokeLinecap='round'
@@ -54,6 +55,9 @@ export const CheckIcon = () => (
 		fill='none'
 		stroke='currentColor'
 		viewBox='0 0 24 24'
+		aria-hidden='true'
+		role='img'
+		aria-label='Tak'
 	>
 		<path
 			strokeLinecap='round'
@@ -70,6 +74,9 @@ export const XIcon = () => (
 		fill='none'
 		stroke='currentColor'
 		viewBox='0 0 24 24'
+		aria-hidden='true'
+		role='img'
+		aria-label='Nie'
 	>
 		<path
 			strokeLinecap='round'
@@ -86,6 +93,7 @@ export const AlertIcon = () => (
 		fill='none'
 		stroke='currentColor'
 		viewBox='0 0 24 24'
+		aria-hidden='true'
 	>
 		<path
 			strokeLinecap='round'
@@ -102,6 +110,7 @@ export const SparklesIcon = () => (
 		fill='none'
 		stroke='currentColor'
 		viewBox='0 0 24 24'
+		aria-hidden='true'
 	>
 		<path
 			strokeLinecap='round'
@@ -113,7 +122,14 @@ export const SparklesIcon = () => (
 );
 
 export const LoaderIcon = () => (
-	<svg className='w-5 h-5 animate-spin' fill='none' viewBox='0 0 24 24'>
+	<svg
+		className='w-5 h-5 animate-spin'
+		fill='none'
+		viewBox='0 0 24 24'
+		aria-hidden='true'
+		role='img'
+		aria-label='Ładowanie'
+	>
 		<circle
 			className='opacity-25'
 			cx='12'
