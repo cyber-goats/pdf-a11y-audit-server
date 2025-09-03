@@ -7,16 +7,19 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({ error }) => {
 
 	return (
 		<div
-			className='bg-red-500/10 backdrop-blur-sm border border-red-500/20 rounded-2xl p-6'
+			className='bg-red-950 border border-red-800 rounded-xl p-6'
 			role='alert'
+			aria-live='assertive'
 		>
 			<div className='flex items-start gap-4'>
 				<div className='flex-shrink-0'>
 					<AlertIcon />
 				</div>
 				<div>
-					<h3 className='font-semibold text-red-400 mb-1'>Wystąpił błąd</h3>
-					<p className='text-red-300'>{error}</p>
+					<h3 className='font-semibold text-red-300 mb-1 text-lg'>
+						Wystąpił błąd
+					</h3>
+					<p className='text-red-200'>{error}</p>
 				</div>
 			</div>
 		</div>

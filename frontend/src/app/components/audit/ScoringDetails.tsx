@@ -6,7 +6,7 @@ interface ScoringDetailsProps {
 }
 
 export const ScoringDetails: React.FC<ScoringDetailsProps> = ({ details }) => (
-	<div className='bg-gradient-to-br from-white/10 to-white/5 rounded-2xl p-6 border border-white/10'>
+	<div className='bg-slate-900 rounded-xl p-6 border border-slate-700'>
 		<h3 className='text-xl font-semibold text-white mb-6'>
 			Szczegóły punktacji
 		</h3>
@@ -14,19 +14,24 @@ export const ScoringDetails: React.FC<ScoringDetailsProps> = ({ details }) => (
 			{details.map((detail, idx) => (
 				<div key={idx}>
 					<div className='flex items-center justify-between mb-2'>
-						<span className='text-gray-300 font-medium'>
+						<span className='text-slate-300 font-medium'>
 							{detail.criterion}
 						</span>
 						<span className='text-white font-semibold'>
 							{detail.points}/{detail.max} pkt
 						</span>
 					</div>
-					<div className='w-full h-2 bg-white/10 rounded-full overflow-hidden'>
+					<div
+						className='w-full h-2 bg-slate-700 rounded-full overflow-hidden'
+						role='progressbar'
+						aria-valuenow={detail.points}
+						aria-valuemin={0}
+						aria-valuemax={detail.max}
+						aria-label={`${detail.criterion}: ${detail.points} z ${detail.max} punktów`}
+					>
 						<div
 							className={`h-full transition-all duration-500 ${
-								detail.points === detail.max
-									? 'bg-gradient-to-r from-emerald-500 to-green-500'
-									: 'bg-gradient-to-r from-amber-500 to-yellow-500'
+								detail.points === detail.max ? 'bg-green-500' : 'bg-yellow-500'
 							}`}
 							style={{ width: `${(detail.points / detail.max) * 100}%` }}
 						/>
