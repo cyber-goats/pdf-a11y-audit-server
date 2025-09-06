@@ -88,6 +88,34 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
 					</div>
 				</div>
 			</div>
+			
+			{/* Karta Nagłówki */}
+			{results.heading_info && (
+              <div className='bg-slate-900 rounded-xl p-6 border border-slate-700'>
+                <h3 className='font-semibold text-white mb-4'>Nagłówki</h3>
+                <div className='space-y-3'>
+                  <div className='flex items-center justify-between'>
+                    <span className='text-slate-300'>H1</span>
+                    <span className={`font-medium ${
+                      results.heading_info.has_single_h1 ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {results.heading_info.h1_count}
+                    </span>
+                  </div>
+                  <div className='flex items-center justify-between'>
+                    <span className='text-slate-300'>Hierarchia</span>
+                    {!results.heading_info.has_skipped_levels ? <CheckIcon /> : <XIcon />}
+                  </div>
+                  {results.heading_info.issues && results.heading_info.issues.length > 0 && (
+                    <div className='mt-2 pt-2 border-t border-slate-700'>
+                      <p className='text-xs text-red-400'>
+                        {results.heading_info.issues[0]}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 		</div>
 		
 		{/* Pasek postępu dostępności */}

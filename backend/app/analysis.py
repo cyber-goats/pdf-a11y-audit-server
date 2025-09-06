@@ -3,6 +3,7 @@ import subprocess
 import logging
 from typing import Tuple, List, Dict
 import xml.etree.ElementTree as ET
+import re
 
 from app.common.exceptions import CorruptPDFError, PasswordProtectedPDFError, PDFAnalysisError
 
@@ -45,6 +46,10 @@ class PdfAnalysis:
         image_info = self._get_image_alts()
         metadata_info = self._get_document_metadata()
         
+        # --- POCZĄTEK POPRAWKI ---
+        heading_info = self._analyze_headings()
+        # --- KONIEC POPRAWKI ---
+        
         full_text = ""
         for page in self.doc:
             full_text += page.get_text()
@@ -56,6 +61,9 @@ class PdfAnalysis:
             "is_tagged": tagged,
             "contains_text": contains_text,
             "image_info": image_info,
+            # --- POCZĄTEK POPRAWKI ---
+            "heading_info": heading_info,
+            # --- KONIEC POPRAWKI ---
             **metadata_info,
             "extracted_text_preview": (full_text[:500] + "...") if len(full_text) > 500 else full_text,
         }
@@ -91,6 +99,108 @@ class PdfAnalysis:
             "language": lang,
             "is_lang_defined": bool(lang and lang.strip())
         }
+    
+    def _analyze_headings(self) -> Dict:
+        """
+        Analizuje hierarchię nagłówków w dokumencie PDF.
+        Używa podobnego podejścia jak przy alt-tekstach - przeszukuje surowe obiekty.
+        """
+        analysis = {
+            "h1_count": 0,
+            "has_single_h1": False,
+            "has_skipped_levels": False,
+            "heading_structure": [],  # Lista poziomów w kolejności: [1, 2, 2, 3, 2, ...]
+            "issues": []
+        }
+        
+        if not self._is_tagged():
+            analysis["issues"].append("Dokument nie jest otagowany - brak struktury nagłówków")
+            return analysis
+        
+        try:
+            # Zbierz wszystkie nagłówki przeszukując obiekty PDF
+            headings_found = []
+            
+            # Przeszukaj obiekty PDF szukając tagów nagłówków
+            for xref in range(1, min(self.doc.xref_length(), 2000)):  # Limit dla wydajności
+                try:
+                    obj_str = self.doc.xref_object(xref, compressed=False)
+                    if obj_str:
+                        # Szukaj tagów H1-H6 w różnych formatach
+                        # Format 1: /H1, /H2, etc.
+                        for level in range(1, 7):
+                            patterns = [
+                                f"/H{level} ",
+                                f"/H{level}\n",
+                                f"/H{level}<<",
+                                f"/H{level}/",
+                                f"/H{level}>>",
+                                f"<H{level}>",
+                                f"<H{level} "
+                            ]
+                            
+                            for pattern in patterns:
+                                if pattern in obj_str:
+                                    headings_found.append(level)
+                                    if level == 1:
+                                        analysis["h1_count"] += 1
+                                    logger.debug(f"Znaleziono nagłówek H{level} w xref {xref}")
+                                    break
+                                
+                except Exception as e:
+                    logger.debug(f"Błąd przy przetwarzaniu xref {xref}: {e}")
+                    continue
+            
+            # Alternatywna metoda: sprawdź StructTreeRoot jeśli istnieje
+            try:
+                catalog_xref = self.doc.pdf_catalog()
+                struct_tree = self.doc.xref_get_key(catalog_xref, "StructTreeRoot")
+                
+                if struct_tree[0] == "xref":
+                    struct_tree_xref = int(struct_tree[1].split()[0])
+                    struct_obj_str = self.doc.xref_object(struct_tree_xref, compressed=False)
+                    
+                    # Szukaj nagłówków w drzewie struktury
+                    if struct_obj_str:
+                        for level in range(1, 7):
+                            count = struct_obj_str.count(f"/H{level}")
+                            for _ in range(count):
+                                headings_found.append(level)
+                                if level == 1:
+                                    analysis["h1_count"] += 1
+                                    
+            except Exception as e:
+                logger.debug(f"Nie udało się przeanalizować StructTreeRoot: {e}")
+            
+            # Analiza wyników
+            if headings_found:
+                analysis["heading_structure"] = sorted(headings_found)
+                analysis["has_single_h1"] = analysis["h1_count"] == 1
+                
+                # Sprawdź czy nie ma pominiętych poziomów
+                unique_levels = sorted(set(headings_found))
+                for i in range(len(unique_levels) - 1):
+                    if unique_levels[i+1] - unique_levels[i] > 1:
+                        analysis["has_skipped_levels"] = True
+                        analysis["issues"].append(
+                            f"Pominięty poziom: H{unique_levels[i]} → H{unique_levels[i+1]}"
+                        )
+                
+                # Dodatkowe sprawdzenia
+                if analysis["h1_count"] == 0:
+                    analysis["issues"].append("Brak nagłówka H1")
+                elif analysis["h1_count"] > 1:
+                    analysis["issues"].append(f"Za dużo nagłówków H1: {analysis['h1_count']}")
+                    
+            else:
+                analysis["issues"].append("Nie znaleziono żadnych nagłówków w dokumencie")
+                
+        except Exception as e:
+            logger.warning(f"Błąd podczas analizy hierarchii nagłówków: {e}")
+            analysis["issues"].append(f"Błąd analizy: {str(e)}")
+        
+        return analysis
+
 
     def _get_image_alts(self) -> Dict:
         """
