@@ -1,5 +1,3 @@
-# backend/app/analysis.py
-
 import pymupdf as fitz
 import subprocess
 import logging
@@ -16,19 +14,12 @@ VERAPDF_CONTAINER_NAME = "verapdf_service"
 
 class PdfAnalysis:
     """
-    Główna klasa orkiestrująca proces analizy dostępności pliku PDF.
+    Główna klasa aranżująca proces analizy dostępności pliku PDF.
     """
 
     def __init__(self, file_bytes: bytes):
         """
         Inicjalizuje analizę, otwierając dokument PDF.
-
-        Args:
-            file_bytes: Surowe bajty pliku PDF.
-
-        Raises:
-            PasswordProtectedPDFError: Jeśli plik jest zaszyfrowany.
-            CorruptPDFError: Jeśli plik jest uszkodzony lub nie ma stron.
         """
         try:
             self.doc = fitz.open(stream=file_bytes, filetype="pdf")
@@ -47,14 +38,12 @@ class PdfAnalysis:
     def run_basic_analysis(self) -> Dict:
         """
         Przeprowadza podstawową analizę właściwości dokumentu.
-
-        Returns:
-            Słownik z podstawowymi informacjami o pliku.
         """
         logger.info(f"Uruchamianie podstawowej analizy dla PDF z {self.doc.page_count} stronami.")
         
         tagged = self._is_tagged()
         image_info = self._get_image_alts()
+        metadata_info = self._get_document_metadata()
         
         full_text = ""
         for page in self.doc:
@@ -67,6 +56,7 @@ class PdfAnalysis:
             "is_tagged": tagged,
             "contains_text": contains_text,
             "image_info": image_info,
+            **metadata_info,
             "extracted_text_preview": (full_text[:500] + "...") if len(full_text) > 500 else full_text,
         }
 
@@ -79,9 +69,33 @@ class PdfAnalysis:
         except Exception:
             return False
         return False
+    
+    def _get_document_metadata(self) -> dict:
+        """Pobiera i weryfikuje metadane dokumentu (tytuł, język)."""
+        metadata = self.doc.metadata
+        title = metadata.get('title', '')
+        
+        # Język jest często w katalogu głównym dokumentu
+        lang = ''
+        try:
+            # PyMuPDF zwraca krotkę (typ, wartość), np. ('string', 'pl-PL')
+            lang_info = self.doc.pdf_catalog_get_key("Lang")
+            if lang_info and lang_info[0] == 'string':
+                lang = lang_info[1]
+        except Exception:
+            lang = '' # Jeśli nie można odczytać, traktujemy jako brak
+            
+        return {
+            "title": title,
+            "is_title_defined": bool(title and title.strip()),
+            "language": lang,
+            "is_lang_defined": bool(lang and lang.strip())
+        }
 
     def _get_image_alts(self) -> Dict:
         """Analizuje obrazy i ich teksty alternatywne."""
+        # placeholdery dla przyszłych funkcjonalności.
+        # Na razie zostawiamy uproszczoną wersję.
         image_analysis = {
             "image_count": 0,
             "images_with_alt": 0,
@@ -94,16 +108,12 @@ class PdfAnalysis:
         
         if not self._is_tagged():
             image_analysis["images_without_alt"] = image_analysis["image_count"]
-            return image_analysis
-        
-        # Logika do ekstrakcji alt-textów (może być rozbudowana)
-        # Na razie uproszczona, zakładamy, że jeśli jest otagowany, to alty są (do poprawy w kolejnych krokach)
         
         return image_analysis
 
     def close(self):
         """Zamyka dokument PDF, jeśli jest otwarty."""
-        if self.doc:
+        if hasattr(self, 'doc') and self.doc:
             self.doc.close()
             logger.info("Dokument PDF został zamknięty.")
 
