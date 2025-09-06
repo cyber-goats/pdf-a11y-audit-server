@@ -1,5 +1,3 @@
-# backend/tests/test_analysis.py
-
 import pytest
 from pathlib import Path
 from app.analysis import PdfAnalysis
@@ -59,3 +57,71 @@ def test_metadata_for_pdf_with_whitespace_title():
     analysis.close()
 
     assert results["is_title_defined"] is False
+    
+def test_alt_texts_for_tagged_pdf_with_alts():
+    """
+    Testuje, czy funkcja poprawnie zlicza alt-texty w otagowanym dokumencie.
+    """
+    pdf_path = SAMPLES_DIR / "tagged_with_alts.pdf"
+    assert pdf_path.exists()
+    
+    analysis = PdfAnalysis(pdf_path.read_bytes())
+    results = analysis.run_basic_analysis()
+    analysis.close()
+
+    image_info = results["image_info"]
+    assert image_info["image_count"] == 2
+    assert image_info["images_with_alt"] == 2
+    assert image_info["images_without_alt"] == 0
+    assert len(image_info["alt_texts"]) == 2
+    assert any("Nastrojowe ujęcie filiżanki kawy" in alt for alt in image_info["alt_texts"])
+    assert any("Artystyczne zdjęcie laptopa" in alt for alt in image_info["alt_texts"])
+
+def test_alt_texts_for_tagged_pdf_without_alts():
+    """
+    Testuje, czy funkcja poprawnie identyfikuje brakujące alt-texty w otagowanym dokumencie.
+    """
+    pdf_path = SAMPLES_DIR / "tagged_no_alts.pdf"
+    assert pdf_path.exists()
+    
+    analysis = PdfAnalysis(pdf_path.read_bytes())
+    results = analysis.run_basic_analysis()
+    analysis.close()
+
+    image_info = results["image_info"]
+    assert image_info["image_count"] == 2
+    assert image_info["images_with_alt"] == 0
+    assert image_info["images_without_alt"] == 2
+
+def test_alt_texts_for_untagged_pdf():
+    """
+    Testuje, czy dla nieotagowanego PDF wszystkie obrazy są liczone jako nieposiadające alt-textu.
+    """
+    pdf_path = SAMPLES_DIR / "untagged_with_images.pdf"
+    assert pdf_path.exists()
+    
+    analysis = PdfAnalysis(pdf_path.read_bytes())
+    results = analysis.run_basic_analysis()
+    analysis.close()
+
+    image_info = results["image_info"]
+    assert results["is_tagged"] is False
+    assert image_info["image_count"] > 0
+    assert image_info["images_with_alt"] == 0
+    assert image_info["images_without_alt"] == image_info["image_count"]
+
+def test_analysis_for_pdf_with_no_images():
+    """
+    Testuje, czy dokument bez obrazów jest poprawnie analizowany.
+    """
+    pdf_path = SAMPLES_DIR / "no_images.pdf"
+    assert pdf_path.exists()
+    
+    analysis = PdfAnalysis(pdf_path.read_bytes())
+    results = analysis.run_basic_analysis()
+    analysis.close()
+    
+    image_info = results["image_info"]
+    assert image_info["image_count"] == 0
+    assert image_info["images_with_alt"] == 0
+    assert image_info["images_without_alt"] == 0
