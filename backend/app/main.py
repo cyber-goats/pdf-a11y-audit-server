@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import pdf  # Używamy importu absolutnego
+from app.routers import pdf, rules
+
 
 app = FastAPI()
 
@@ -18,6 +19,7 @@ app.add_middleware(
 )
 
 app.include_router(pdf.router)
+app.include_router(rules.router)
 
 @app.get("/")
 def read_root():

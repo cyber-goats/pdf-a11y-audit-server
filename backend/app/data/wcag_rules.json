@@ -1,0 +1,462 @@
+{
+	"version": "2.1",
+	"last_updated": "2024-01-15",
+	"metadata": {
+		"description": "Baza wiedzy reguł WCAG 2.1 i PDF/UA dla audytu dostępności dokumentów PDF",
+		"source": "W3C WCAG 2.1, ISO 14289-1:2014 (PDF/UA)",
+		"language": "pl"
+	},
+	"rules": [
+		{
+			"id": "wcag_1.1.1",
+			"title": "Treść nietekstowa",
+			"description": "Cała treść nietekstowa przedstawiona użytkownikowi ma swoją tekstową alternatywę, która służy równoważnemu celowi, z wyjątkiem sytuacji wymienionych w kryteriach.",
+			"level": "A",
+			"category": "perceivable",
+			"pdf_specific": true,
+			"pdf_ua_mapping": "7.1, 7.3",
+			"techniques": [
+				"PDF1: Stosowanie tekstu alternatywnego dla obrazów za pomocą właściwości /Alt",
+				"PDF4: Dodawanie tekstów alternatywnych do obrazów za pomocą narzędzi autorskich"
+			],
+			"failures": [
+				"F30: Używanie samego tekstu alternatywnego, który nie identyfikuje treści nietekstowej",
+				"F38: Brak tekstu alternatywnego dla treści nietekstowej używanej w celach dekoracyjnych w PDF",
+				"F65: Pominięcie atrybutu alt w tagach <Figure>"
+			],
+			"examples": [
+				{
+					"type": "correct",
+					"description": "Prawidłowy tag Figure z tekstem alternatywnym",
+					"code": "<Figure><Alt>Wykres słupkowy pokazujący wzrost sprzedaży o 25% w Q3 2024</Alt></Figure>"
+				},
+				{
+					"type": "incorrect",
+					"description": "Brakujący tekst alternatywny",
+					"code": "<Figure></Figure>"
+				}
+			],
+			"recommendations": [
+				"Dodaj opisowy tekst alternatywny do wszystkich znaczących obrazów",
+				"Użyj pustego atrybutu Alt=\"\" dla obrazów dekoracyjnych",
+				"Dla złożonych grafik rozważ dodanie dłuższego opisu w tekście dokumentu",
+				"Upewnij się, że tekst alternatywny przekazuje tę samą informację co obraz"
+			],
+			"references": [
+				"https://www.w3.org/WAI/WCAG21/Understanding/non-text-content.html",
+				"https://www.pdfa.org/wp-content/uploads/2019/06/TaggedPDFBestPracticeGuide.pdf"
+			]
+		},
+		{
+			"id": "wcag_1.3.1",
+			"title": "Informacje i relacje",
+			"description": "Informacje, struktura i relacje przekazywane przez prezentację mogą być określone programowo lub są dostępne w tekście.",
+			"level": "A",
+			"category": "perceivable",
+			"pdf_specific": true,
+			"pdf_ua_mapping": "7.1, 7.2",
+			"techniques": [
+				"PDF6: Używanie nagłówków w tagach PDF",
+				"PDF9: Tworzenie nagłówków używając tagów H1-H6",
+				"PDF11: Zapewnienie łączy i nawigacji używając tagów Link i /Link",
+				"PDF12: Zapewnienie opisów formularzy w tagach PDF",
+				"PDF17: Określanie spójnej kolejności tabulatorów w formularzach PDF"
+			],
+			"failures": [
+				"F2: Używanie zmian w prezentacji tekstu do przekazywania informacji bez używania odpowiednich tagów",
+				"F33: Używanie tylko białych znaków do tworzenia kolumn w zwykłym tekście",
+				"F34: Niepowodzenie z powodu używania tylko białych znaków lub pustych tagów P do formatowania",
+				"F42: Niepowodzenie z powodu używania stylów zamiast tagów nagłówków"
+			],
+			"examples": [
+				{
+					"type": "correct",
+					"description": "Prawidłowa struktura nagłówków",
+					"code": "<H1>Tytuł główny</H1>\n<H2>Rozdział 1</H2>\n<P>Treść rozdziału...</P>\n<H2>Rozdział 2</H2>"
+				},
+				{
+					"type": "correct",
+					"description": "Prawidłowo otagowana lista",
+					"code": "<L>\n  <LI>\n    <Lbl>•</Lbl>\n    <LBody>Pierwszy element listy</LBody>\n  </LI>\n  <LI>\n    <Lbl>•</Lbl>\n    <LBody>Drugi element listy</LBody>\n  </LI>\n</L>"
+				}
+			],
+			"recommendations": [
+				"Użyj tagów H1-H6 dla nagłówków zachowując hierarchię",
+				"Oznacz listy tagami L, LI, Lbl, LBody",
+				"Użyj tagów Table, TR, TD, TH dla tabel",
+				"Zachowaj logiczną kolejność czytania w drzewie tagów",
+				"Nie polegaj tylko na wizualnym formatowaniu"
+			],
+			"references": [
+				"https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html"
+			]
+		},
+		{
+			"id": "wcag_1.3.2",
+			"title": "Zrozumiała kolejność",
+			"description": "Gdy kolejność prezentacji treści wpływa na jej znaczenie, prawidłowa kolejność czytania może być określona programowo.",
+			"level": "A",
+			"category": "perceivable",
+			"pdf_specific": true,
+			"pdf_ua_mapping": "7.2",
+			"techniques": [
+				"PDF3: Zapewnienie prawidłowej kolejności tabulatorów i struktury czytania w dokumentach PDF"
+			],
+			"failures": [
+				"F1: Niepowodzenie z powodu zmiany znaczenia treści przez zmianę kolejności czytania"
+			],
+			"examples": [
+				{
+					"type": "correct",
+					"description": "Kolejność tagów odpowiada logicznej kolejności czytania",
+					"code": "<Document>\n  <H1>Nagłówek</H1>\n  <P>Wprowadzenie</P>\n  <Figure>...</Figure>\n  <P>Opis obrazu</P>\n</Document>"
+				}
+			],
+			"recommendations": [
+				"Sprawdź kolejność tagów w panelu Order w Adobe Acrobat",
+				"Upewnij się, że kolejność czytania jest logiczna",
+				"Testuj z czytnikiem ekranu"
+			],
+			"references": [
+				"https://www.w3.org/WAI/WCAG21/Understanding/meaningful-sequence.html"
+			]
+		},
+		{
+			"id": "wcag_1.4.1",
+			"title": "Użycie koloru",
+			"description": "Kolor nie jest używany jako jedyny wizualny sposób przekazywania informacji, wskazywania działania, zachęcania do odpowiedzi lub wyróżniania elementu wizualnego.",
+			"level": "A",
+			"category": "perceivable",
+			"pdf_specific": false,
+			"pdf_ua_mapping": null,
+			"techniques": [
+				"G14: Zapewnienie, że informacje przekazywane przez różnice kolorów są również dostępne w tekście",
+				"G182: Zapewnienie dodatkowych wizualnych wskazówek gdy różnice kolorów są używane"
+			],
+			"failures": [
+				"F13: Niepowodzenie z powodu przekazywania informacji tylko przez kolor",
+				"F73: Niepowodzenie z powodu tworzenia linków, które nie są wizualnie oczywiste bez widzenia kolorów"
+			],
+			"examples": [
+				{
+					"type": "incorrect",
+					"description": "Tylko kolor wskazuje błąd",
+					"note": "Pola z błędami są czerwone"
+				},
+				{
+					"type": "correct",
+					"description": "Kolor + ikona/tekst",
+					"note": "Pola z błędami są czerwone i mają ikonę ostrzeżenia oraz tekst błędu"
+				}
+			],
+			"recommendations": [
+				"Dodaj ikony lub tekst oprócz koloru",
+				"Użyj podkreślenia dla linków, nie tylko koloru",
+				"W wykresach użyj różnych wzorów, nie tylko kolorów"
+			],
+			"references": [
+				"https://www.w3.org/WAI/WCAG21/Understanding/use-of-color.html"
+			]
+		},
+		{
+			"id": "wcag_1.4.3",
+			"title": "Kontrast (minimalny)",
+			"description": "Wizualna prezentacja tekstu i obrazów tekstu ma współczynnik kontrastu co najmniej 4.5:1, z wyjątkiem dużego tekstu (3:1), tekstu dekoracyjnego lub logo.",
+			"level": "AA",
+			"category": "perceivable",
+			"pdf_specific": false,
+			"pdf_ua_mapping": null,
+			"techniques": [
+				"G18: Zapewnienie współczynnika kontrastu co najmniej 4.5:1",
+				"G145: Zapewnienie współczynnika kontrastu co najmniej 3:1 dla dużego tekstu"
+			],
+			"failures": [
+				"F24: Niepowodzenie z powodu niewystarczającego kontrastu tła",
+				"F83: Niepowodzenie z powodu używania obrazów tła, które nie zapewniają wystarczającego kontrastu"
+			],
+			"examples": [
+				{
+					"type": "correct",
+					"description": "Dobry kontrast",
+					"foreground": "#000000",
+					"background": "#FFFFFF",
+					"ratio": "21:1"
+				},
+				{
+					"type": "incorrect",
+					"description": "Niewystarczający kontrast",
+					"foreground": "#777777",
+					"background": "#FFFFFF",
+					"ratio": "4.48:1"
+				}
+			],
+			"recommendations": [
+				"Użyj narzędzi do sprawdzania kontrastu przed publikacją",
+				"Czarny tekst na białym tle zawsze spełnia wymogi",
+				"Unikaj jasnego tekstu na jasnym tle",
+				"Testuj PDF w trybie wysokiego kontrastu"
+			],
+			"references": [
+				"https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html",
+				"https://webaim.org/resources/contrastchecker/"
+			]
+		},
+		{
+			"id": "wcag_2.1.1",
+			"title": "Klawiatura",
+			"description": "Cała funkcjonalność treści jest dostępna za pomocą interfejsu klawiatury bez wymagania określonego czasu dla pojedynczych naciśnięć klawiszy.",
+			"level": "A",
+			"category": "operable",
+			"pdf_specific": true,
+			"pdf_ua_mapping": "7.1, 7.18",
+			"techniques": [
+				"PDF3: Zapewnienie prawidłowej kolejności tabulatorów w formularzach PDF",
+				"PDF11: Zapewnienie łączy nawigacyjnych w PDF",
+				"PDF23: Zapewnienie interaktywnych kontrolek formularza w dokumentach PDF"
+			],
+			"failures": [
+				"F54: Niepowodzenie z powodu używania tylko gestów wskaźnika",
+				"F55: Niepowodzenie z powodu używania skryptów usuwających fokus"
+			],
+			"examples": [
+				{
+					"type": "correct",
+					"description": "Formularz z prawidłową kolejnością tabulacji",
+					"note": "Wszystkie pola formularza są dostępne przez klawisz Tab w logicznej kolejności"
+				}
+			],
+			"recommendations": [
+				"Ustaw kolejność tabulacji dla wszystkich interaktywnych elementów",
+				"Zapewnij, że wszystkie funkcje są dostępne z klawiatury",
+				"Nie usuwaj fokusa klawiatury",
+				"Testuj nawigację tylko za pomocą klawiatury"
+			],
+			"references": [
+				"https://www.w3.org/WAI/WCAG21/Understanding/keyboard.html"
+			]
+		},
+		{
+			"id": "wcag_2.4.2",
+			"title": "Tytuł strony",
+			"description": "Strony mają tytuły, które opisują temat lub cel.",
+			"level": "A",
+			"category": "operable",
+			"pdf_specific": true,
+			"pdf_ua_mapping": "7.1",
+			"techniques": [
+				"PDF18: Określanie tytułu dokumentu używając wpisu Title w słowniku dokumentu PDF"
+			],
+			"failures": [
+				"F25: Niepowodzenie z powodu tytułu, który nie identyfikuje treści"
+			],
+			"examples": [
+				{
+					"type": "correct",
+					"description": "Opisowy tytuł dokumentu",
+					"code": "Raport roczny 2024 - Firma XYZ"
+				},
+				{
+					"type": "incorrect",
+					"description": "Nieopisowy tytuł",
+					"code": "Dokument1.pdf"
+				}
+			],
+			"recommendations": [
+				"Ustaw tytuł dokumentu we właściwościach PDF",
+				"Tytuł powinien być unikalny i opisowy",
+				"Unikaj ogólnych tytułów jak 'Dokument' czy 'PDF'",
+				"Włącz opcję 'Display Document Title' we właściwościach"
+			],
+			"references": [
+				"https://www.w3.org/WAI/WCAG21/Understanding/page-titled.html"
+			]
+		},
+		{
+			"id": "wcag_2.4.6",
+			"title": "Nagłówki i etykiety",
+			"description": "Nagłówki i etykiety opisują temat lub cel.",
+			"level": "AA",
+			"category": "operable",
+			"pdf_specific": true,
+			"pdf_ua_mapping": "7.4",
+			"techniques": [
+				"PDF9: Tworzenie nagłówków używając tagów H1-H6",
+				"G130: Zapewnienie opisowych nagłówków",
+				"G131: Zapewnienie opisowych etykiet"
+			],
+			"failures": ["F96: Niepowodzenie z powodu nieopisowych nagłówków"],
+			"examples": [
+				{
+					"type": "incorrect",
+					"description": "Nieopisowy nagłówek",
+					"code": "<H2>Rozdział 2</H2>"
+				},
+				{
+					"type": "correct",
+					"description": "Opisowy nagłówek",
+					"code": "<H2>Rozdział 2: Metodologia badań</H2>"
+				}
+			],
+			"recommendations": [
+				"Używaj opisowych nagłówków, które jasno określają treść sekcji",
+				"Etykiety formularzy powinny jasno wskazywać wymagane informacje",
+				"Unikaj ogólnych nagłówków jak 'Wprowadzenie' bez kontekstu",
+				"Zachowaj spójność w nazewnictwie"
+			],
+			"references": [
+				"https://www.w3.org/WAI/WCAG21/Understanding/headings-and-labels.html"
+			]
+		},
+		{
+			"id": "wcag_3.1.1",
+			"title": "Język strony",
+			"description": "Domyślny język ludzki każdej strony może być określony programowo.",
+			"level": "A",
+			"category": "understandable",
+			"pdf_specific": true,
+			"pdf_ua_mapping": "7.2",
+			"techniques": [
+				"PDF16: Określanie domyślnego języka dokumentu używając wpisu /Lang w katalogu dokumentu PDF",
+				"PDF19: Określanie języka fragmentów tekstu używając wpisu /Lang dla tagów struktury"
+			],
+			"failures": [
+				"F88: Niepowodzenie z powodu nieoznaczenia języka dokumentu"
+			],
+			"examples": [
+				{
+					"type": "correct",
+					"description": "Ustawiony język dokumentu",
+					"code": "/Lang (pl-PL)",
+					"note": "Ustawione we właściwościach dokumentu"
+				}
+			],
+			"recommendations": [
+				"Ustaw język dokumentu we właściwościach PDF",
+				"Dla dokumentów wielojęzycznych oznacz fragmenty w innych językach",
+				"Użyj odpowiednich kodów języka (np. 'pl-PL' dla polskiego)",
+				"Sprawdź ustawienia języka w Adobe Acrobat Pro"
+			],
+			"references": [
+				"https://www.w3.org/WAI/WCAG21/Understanding/language-of-page.html"
+			]
+		},
+		{
+			"id": "wcag_3.3.2",
+			"title": "Etykiety lub instrukcje",
+			"description": "Etykiety lub instrukcje są dostarczane, gdy treść wymaga wprowadzenia danych przez użytkownika.",
+			"level": "A",
+			"category": "understandable",
+			"pdf_specific": true,
+			"pdf_ua_mapping": "7.19",
+			"techniques": [
+				"PDF10: Zapewnienie etykiet dla interaktywnych kontrolek formularza w dokumentach PDF",
+				"PDF22: Wskazywanie, gdy pola formularza są wymagane"
+			],
+			"failures": [
+				"F82: Niepowodzenie z powodu wizualnego formatowania pól bez etykiet"
+			],
+			"examples": [
+				{
+					"type": "correct",
+					"description": "Pole formularza z etykietą",
+					"code": "<Label>Imię i nazwisko (wymagane):</Label>\n<Input type=\"text\" required=\"true\"/>"
+				},
+				{
+					"type": "correct",
+					"description": "Pole z instrukcją",
+					"code": "<Label>Data urodzenia (DD.MM.RRRR):</Label>\n<Input type=\"text\" placeholder=\"01.01.2000\"/>"
+				}
+			],
+			"recommendations": [
+				"Każde pole formularza musi mieć etykietę",
+				"Oznacz wymagane pola w etykiecie",
+				"Dodaj instrukcje formatowania (np. format daty)",
+				"Użyj tooltipów dla dodatkowych wyjaśnień"
+			],
+			"references": [
+				"https://www.w3.org/WAI/WCAG21/Understanding/labels-or-instructions.html"
+			]
+		},
+		{
+			"id": "wcag_4.1.2",
+			"title": "Nazwa, rola, wartość",
+			"description": "Dla wszystkich komponentów interfejsu użytkownika nazwa i rola mogą być określone programowo; stany, właściwości i wartości ustawiane przez użytkownika mogą być ustawione programowo.",
+			"level": "A",
+			"category": "robust",
+			"pdf_specific": true,
+			"pdf_ua_mapping": "7.1, 7.18",
+			"techniques": [
+				"PDF10: Zapewnienie etykiet dla kontrolek formularza",
+				"PDF12: Zapewnienie opisów pól formularza",
+				"PDF23: Zapewnienie interaktywnych kontrolek formularza"
+			],
+			"failures": [
+				"F59: Niepowodzenie z powodu używania skryptów bez odpowiednich ról",
+				"F86: Niepowodzenie z powodu braku nazw dla kontrolek formularza"
+			],
+			"examples": [
+				{
+					"type": "correct",
+					"description": "Checkbox z prawidłową nazwą i rolą",
+					"code": "<CheckBox name=\"zgoda_marketing\" role=\"checkbox\" checked=\"false\">\n  <Label>Wyrażam zgodę na otrzymywanie informacji marketingowych</Label>\n</CheckBox>"
+				}
+			],
+			"recommendations": [
+				"Ustaw nazwy dla wszystkich pól formularza",
+				"Zapewnij, że role elementów są prawidłowo określone",
+				"Użyj standardowych kontrolek PDF gdy to możliwe",
+				"Testuj z technologiami asystującymi"
+			],
+			"references": [
+				"https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html"
+			]
+		}
+	],
+	"pdf_specific_considerations": {
+		"tagging_requirements": [
+			"Dokument musi mieć kompletne drzewo tagów",
+			"Wszystkie elementy treści muszą być otagowane lub oznaczone jako artefakty",
+			"Tagi muszą odzwierciedlać logiczną strukturę dokumentu",
+			"Kolejność tagów musi odpowiadać kolejności czytania"
+		],
+		"common_issues": [
+			{
+				"issue": "Brak tagów struktury",
+				"impact": "Czytniki ekranu nie mogą prawidłowo interpretować dokumentu",
+				"solution": "Użyj funkcji 'Make Accessible' w Adobe Acrobat Pro"
+			},
+			{
+				"issue": "Obrazy bez tekstu alternatywnego",
+				"impact": "Osoby niewidome nie mają dostępu do informacji zawartych w obrazach",
+				"solution": "Dodaj atrybut /Alt do wszystkich tagów Figure"
+			},
+			{
+				"issue": "Nieprawidłowa kolejność czytania",
+				"impact": "Treść jest czytana w niewłaściwej kolejności",
+				"solution": "Popraw kolejność w panelu Order w Adobe Acrobat"
+			},
+			{
+				"issue": "Skomplikowane tabele bez nagłówków",
+				"impact": "Trudność w zrozumieniu relacji danych",
+				"solution": "Użyj tagów TH dla nagłówków i powiąż je z komórkami danych"
+			}
+		],
+		"testing_tools": [
+			{
+				"name": "Adobe Acrobat Pro DC",
+				"description": "Wbudowane narzędzie Accessibility Checker",
+				"url": "https://www.adobe.com/accessibility/products/acrobat.html"
+			},
+			{
+				"name": "PAC 3",
+				"description": "PDF Accessibility Checker - darmowe narzędzie do testowania",
+				"url": "https://www.access-for-all.ch/en/pdf-accessibility-checker.html"
+			},
+			{
+				"name": "NVDA",
+				"description": "Darmowy czytnik ekranu do testowania",
+				"url": "https://www.nvaccess.org/"
+			}
+		]
+	}
+}
