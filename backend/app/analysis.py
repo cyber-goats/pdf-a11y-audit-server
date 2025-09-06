@@ -93,23 +93,129 @@ class PdfAnalysis:
         }
 
     def _get_image_alts(self) -> Dict:
-        """Analizuje obrazy i ich teksty alternatywne."""
-        # placeholdery dla przyszłych funkcjonalności.
-        # Na razie zostawiamy uproszczoną wersję.
+        """
+        Analizuje dokument w poszukiwaniu obrazków i ich tekstów alternatywnych.
+        Obsługuje alt-teksty w formacie hex UTF-16 rozłożone na wiele linii.
+        """
         image_analysis = {
             "image_count": 0,
             "images_with_alt": 0,
             "images_without_alt": 0,
             "alt_texts": []
         }
+        all_alt_texts = set()
         
+        # Zlicz wszystkie obrazki
         for page in self.doc:
-            image_analysis["image_count"] += len(page.get_images(full=True))
+            image_list = page.get_images(full=True)
+            image_analysis["image_count"] += len(image_list)
         
-        if not self._is_tagged():
-            image_analysis["images_without_alt"] = image_analysis["image_count"]
+        # Przeszukaj wszystkie obiekty w PDF szukając /Alt
+        for xref in range(1, self.doc.xref_length()):
+            try:
+                # Pobierz obiekt jako string
+                obj_str = self.doc.xref_object(xref, compressed=False)
+                
+                if obj_str and "/Alt" in obj_str:
+                    alt_text = None
+                    
+                    # Sprawdź czy to hex string (najczęstsze w PDF)
+                    if "/Alt <" in obj_str or "/Alt<" in obj_str:
+                        # Znajdź początek hex stringa
+                        if "/Alt <" in obj_str:
+                            start = obj_str.find("/Alt <") + 6
+                        else:
+                            start = obj_str.find("/Alt<") + 5
+                        
+                        # Zbierz wszystkie znaki hex aż do '>'
+                        hex_chars = []
+                        i = start
+                        while i < len(obj_str):
+                            char = obj_str[i]
+                            if char == '>':
+                                break
+                            elif char in '0123456789ABCDEFabcdef':
+                                hex_chars.append(char)
+                            # Ignoruj białe znaki (spacje, nowe linie)
+                            i += 1
+                        
+                        hex_text = ''.join(hex_chars)
+                        
+                        if hex_text:
+                            try:
+                                # Dekoduj hex do bajtów, potem do tekstu
+                                if hex_text.upper().startswith('FEFF'):
+                                    # UTF-16 BE z BOM
+                                    alt_text = bytes.fromhex(hex_text).decode('utf-16-be')
+                                elif hex_text.upper().startswith('FFFE'):
+                                    # UTF-16 LE z BOM
+                                    alt_text = bytes.fromhex(hex_text).decode('utf-16-le')
+                                else:
+                                    # Spróbuj UTF-16 BE (domyślne dla PDF)
+                                    alt_text = bytes.fromhex(hex_text).decode('utf-16-be')
+                            except Exception as e:
+                                logger.debug(f"Błąd dekodowania hex w xref {xref}: {e}")
+                    
+                    # Alternatywna metoda: string w nawiasach
+                    elif "/Alt(" in obj_str:
+                        start = obj_str.find("/Alt(") + 5
+                        # Znajdź pasujący nawias zamykający
+                        depth = 1
+                        i = start
+                        text_chars = []
+                        while i < len(obj_str) and depth > 0:
+                            if obj_str[i:i+2] == '\\(':
+                                text_chars.append('(')
+                                i += 2
+                            elif obj_str[i:i+2] == '\\)':
+                                text_chars.append(')')
+                                i += 2
+                            elif obj_str[i:i+2] == '\\n':
+                                text_chars.append(' ')
+                                i += 2
+                            elif obj_str[i:i+2] == '\\r':
+                                text_chars.append(' ')
+                                i += 2
+                            elif obj_str[i] == '(':
+                                depth += 1
+                                text_chars.append(obj_str[i])
+                                i += 1
+                            elif obj_str[i] == ')':
+                                depth -= 1
+                                if depth > 0:
+                                    text_chars.append(obj_str[i])
+                                i += 1
+                            else:
+                                text_chars.append(obj_str[i])
+                                i += 1
+                        
+                        alt_text = ''.join(text_chars)
+                    
+                    # Jeśli znaleźliśmy tekst, dodaj go do zbioru
+                    if alt_text:
+                        # Oczyść tekst
+                        alt_text = alt_text.replace('\ufeff', '')  # Usuń BOM
+                        alt_text = alt_text.strip()
+                        
+                        if len(alt_text) > 5:  # Ignoruj bardzo krótkie teksty
+                            all_alt_texts.add(alt_text)
+                            logger.info(f"Znaleziono alt-tekst w xref {xref}: {alt_text[:50]}...")
+                            
+            except Exception as e:
+                logger.debug(f"Błąd przy przetwarzaniu xref {xref}: {e}")
+                continue
+        
+        # Podsumowanie
+        image_analysis["alt_texts"] = list(all_alt_texts)
+        image_analysis["images_with_alt"] = min(len(all_alt_texts), image_analysis["image_count"])
+        image_analysis["images_without_alt"] = max(0, 
+            image_analysis["image_count"] - image_analysis["images_with_alt"])
+        
+        logger.info(f"Analiza obrazków: znaleziono {image_analysis['image_count']} obrazków, "
+                    f"{len(all_alt_texts)} alt-tekstów")
         
         return image_analysis
+    
 
     def close(self):
         """Zamyka dokument PDF, jeśli jest otwarty."""
