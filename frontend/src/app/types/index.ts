@@ -25,6 +25,13 @@ export interface Results {
 		images_without_alt: number;
 		alt_texts: string[];
 	};
+	heading_info?: {
+		h1_count: number;
+		has_single_h1: boolean;
+		has_skipped_levels: boolean;
+		heading_structure: number[];
+		issues: string[];
+	};
 	extracted_text_preview?: string;
 }
 
@@ -43,6 +50,13 @@ export interface ReportData {
 			images_with_alt: number;
 			images_without_alt: number;
 			alt_texts: string[];
+		};
+		heading_info?: {
+			h1_count: number;
+			has_single_h1: boolean;
+			has_skipped_levels: boolean;
+			heading_structure: number[];
+			issues: string[];
 		};
 		extracted_text_preview?: string;
 	};
@@ -106,7 +120,6 @@ export interface ReportViewProps {
 export interface ErrorMessageProps {
 	error: string | null;
 }
-
 
 // TYPY DLA ASYNCHRONICZNEGO API
 

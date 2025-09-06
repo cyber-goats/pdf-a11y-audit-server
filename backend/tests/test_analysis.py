@@ -2,6 +2,8 @@ import pytest
 from pathlib import Path
 from app.analysis import PdfAnalysis
 
+# run: pytest backend/tests/ -v 
+
 # Ścieżka do folderu z testowymi plikami PDF
 SAMPLES_DIR = Path(__file__).parent / "sample_pdfs"
 
@@ -125,3 +127,58 @@ def test_analysis_for_pdf_with_no_images():
     assert image_info["image_count"] == 0
     assert image_info["images_with_alt"] == 0
     assert image_info["images_without_alt"] == 0
+    
+def test_heading_analysis_for_correct_hierarchy():
+    """
+    Testuje analizę hierarchii nagłówków dla pliku z poprawną strukturą.
+    """
+    # Założenie: plik 'correct_headings.pdf' istnieje i ma strukturę H1 -> H2 -> H3
+    pdf_path = SAMPLES_DIR / "correct_headings.pdf"
+    if not pdf_path.exists():
+        pytest.skip("Test pominięty: brak pliku 'correct_headings.pdf' do testowania.")
+        
+    analysis = PdfAnalysis(pdf_path.read_bytes())
+    results = analysis.run_basic_analysis()
+    analysis.close()
+    
+    heading_info = results["heading_info"]
+    assert heading_info["has_single_h1"] is True
+    assert heading_info["has_skipped_levels"] is False
+    assert heading_info["h1_count"] == 1
+    assert not heading_info["issues"]
+
+def test_heading_analysis_for_multiple_h1():
+    """
+    Testuje analizę dla pliku z wieloma nagłówkami H1.
+    """
+    # Założenie: plik 'multiple_h1.pdf' istnieje
+    pdf_path = SAMPLES_DIR / "multiple_h1.pdf"
+    if not pdf_path.exists():
+        pytest.skip("Test pominięty: brak pliku 'multiple_h1.pdf' do testowania.")
+
+    analysis = PdfAnalysis(pdf_path.read_bytes())
+    results = analysis.run_basic_analysis()
+    analysis.close()
+
+    heading_info = results["heading_info"]
+    assert heading_info["has_single_h1"] is False
+    assert heading_info["h1_count"] > 1
+    assert any("Za dużo nagłówków H1" in issue for issue in heading_info["issues"])
+
+
+def test_heading_analysis_for_skipped_level():
+    """
+    Testuje analizę dla pliku z pominiętym poziomem nagłówka (np. H1 -> H3).
+    """
+    # Założenie: plik 'skipped_level.pdf' istnieje
+    pdf_path = SAMPLES_DIR / "skipped_level.pdf"
+    if not pdf_path.exists():
+        pytest.skip("Test pominięty: brak pliku 'skipped_level.pdf' do testowania.")
+
+    analysis = PdfAnalysis(pdf_path.read_bytes())
+    results = analysis.run_basic_analysis()
+    analysis.close()
+
+    heading_info = results["heading_info"]
+    assert heading_info["has_skipped_levels"] is True
+    assert any("Pominięty poziom" in issue for issue in heading_info["issues"])
