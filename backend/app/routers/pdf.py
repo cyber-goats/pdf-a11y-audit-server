@@ -59,6 +59,24 @@ async def get_analysis_status(task_id: str):
     else:
         return {"status": task_result.state}
 
+@router.get("/report/{report_id}", tags=["Reports"])
+async def get_report_by_id(report_id: str):
+    """
+    Pobiera wygenerowany raport na podstawie jego ID (task_id).
+    """
+    task_result = AsyncResult(report_id)
+    if task_result.ready():
+        if task_result.successful():
+            result = task_result.get()
+            return {"status": "SUCCESS", "report": result}
+        else:
+            return JSONResponse(
+                status_code=500,
+                content={"status": "FAILURE", "error_message": str(task_result.info)}
+            )
+    else:
+        raise HTTPException(status_code=404, detail="Raport nie został znaleziony lub nie jest jeszcze gotowy.")
+
 @router.post("/download-report/{format}", tags=["Reports"])
 async def download_report(format: ReportFormat, report_data: dict):
     """
