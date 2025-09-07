@@ -19,12 +19,19 @@ export interface Results {
 	page_count: number;
 	is_tagged: boolean;
 	contains_text: boolean;
+	// Document metadata
+	title?: string;
+	is_title_defined?: boolean;
+	language?: string;
+	is_lang_defined?: boolean;
+	// Info about img
 	image_info?: {
 		image_count: number;
 		images_with_alt: number;
 		images_without_alt: number;
 		alt_texts: string[];
 	};
+	// Info about headers
 	heading_info?: {
 		h1_count: number;
 		has_single_h1: boolean;
@@ -45,12 +52,19 @@ export interface ReportData {
 		page_count: number;
 		is_tagged: boolean;
 		contains_text: boolean;
+		// Document metadata
+		title?: string;
+		is_title_defined?: boolean;
+		language?: string;
+		is_lang_defined?: boolean;
+		// Info about img
 		image_info?: {
 			image_count: number;
 			images_with_alt: number;
 			images_without_alt: number;
 			alt_texts: string[];
 		};
+		// Info about headers
 		heading_info?: {
 			h1_count: number;
 			has_single_h1: boolean;
