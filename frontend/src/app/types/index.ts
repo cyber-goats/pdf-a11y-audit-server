@@ -1,4 +1,5 @@
 import type { RefObject } from 'react';
+import { AnalysisLevel } from '../components/audit/AnalysisLevelSelector';
 
 export type TabId = 'summary' | 'details' | 'recommendations';
 
@@ -41,8 +42,20 @@ export interface Results {
 	};
 	extracted_text_preview?: string;
 }
+export interface DetailedResults {
+	// table_info?: { table_count: number; tables_with_headers: number };
+	// form_info?: { form_count: number; forms_with_labels: number };
+	[key: string]: unknown;
+}
+
+export interface DeepScanResults {
+	// color_contrast_issues?: { issue_count: number; details: string[] };
+	// reading_order_valid?: boolean;
+	[key: string]: unknown;
+}
 
 export interface ReportData {
+	analysis_level?: AnalysisLevel;
 	metadata: {
 		filename: string;
 		analysis_date: string;
@@ -74,6 +87,8 @@ export interface ReportData {
 		};
 		extracted_text_preview?: string;
 	};
+	detailed_results?: DetailedResults;
+	deep_scan?: DeepScanResults;
 	pdf_ua_validation: {
 		is_compliant: boolean;
 		failed_rules_count: number;
