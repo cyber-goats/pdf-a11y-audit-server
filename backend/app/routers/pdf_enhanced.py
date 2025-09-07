@@ -9,6 +9,9 @@ from app.models.analysis_levels import AnalysisLevel
 
 router = APIRouter()
 
+# Definicja sygnatury PDF
+PDF_MAGIC_NUMBER = b'%PDF-'
+
 @router.post("/upload/", tags=["PDF Processing"], status_code=202)
 async def upload_pdf_for_analysis(
     file: UploadFile = File(...),
@@ -33,7 +36,16 @@ async def upload_pdf_for_analysis(
     
     # Sprawdź rozmiar pliku dla różnych poziomów
     file_bytes = await file.read()
+    
+    # Walidacja "Magic Numbers"
+    if not file_bytes.startswith(PDF_MAGIC_NUMBER):
+        raise HTTPException(
+            status_code=400,
+            detail="Nieprawidłowa sygnatura pliku. Plik nie jest poprawnym dokumentem PDF."
+        )
+        
     file_size_mb = len(file_bytes) / (1024 * 1024)
+
     
     # Limity rozmiaru dla poziomów
     size_limits = {
