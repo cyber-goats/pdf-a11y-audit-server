@@ -1,4 +1,5 @@
 import type { Results, ReportData, AnalysisStatusResponse } from '@/app/types';
+import { AnalysisLevel } from './AnalysisLevelSelector';
 
 // 1. Definiujemy kształt naszego stanu
 export interface AppState {
@@ -17,6 +18,7 @@ export interface AppState {
 	showReport: boolean;
 	error: string | null;
 	progress: number;
+	analysisLevel: AnalysisLevel;
 }
 
 // 2. Definiujemy początkowy stan aplikacji
@@ -29,6 +31,7 @@ export const initialState: AppState = {
 	showReport: false,
 	error: null,
 	progress: 0,
+	analysisLevel: 'standard',
 };
 
 // 3. Definiujemy możliwe akcje, które mogą zmieniać stan
@@ -44,13 +47,19 @@ type Action =
 	| { type: 'SET_ERROR'; payload: string }
 	| { type: 'TOGGLE_REPORT'; payload: boolean }
 	| { type: 'RESET' }
-	| { type: 'HARD_RESET' };
+	| { type: 'HARD_RESET' }
+	| { type: 'SET_ANALYSIS_LEVEL'; payload: AnalysisLevel };
 
 // 4. Tworzymy funkcję reducer, która zarządza zmianami stanu
 export function pdfAuditReducer(state: AppState, action: Action): AppState {
 	switch (action.type) {
 		case 'SELECT_FILE':
-			return { ...initialState, file: action.payload, taskId: null };
+			return {
+				...initialState,
+				file: action.payload,
+				taskId: null,
+				analysisLevel: state.analysisLevel,
+			};
 		case 'START_DRAG':
 			return { ...state, status: 'dragging' };
 		case 'END_DRAG':
@@ -66,17 +75,17 @@ export function pdfAuditReducer(state: AppState, action: Action): AppState {
 		case 'SET_PROGRESS':
 			return { ...state, progress: action.payload };
 		case 'ANALYSIS_SUCCESS':
-		const report = action.payload.result;
-		const resultsData: Results | null = report
+			const report = action.payload.result;
+			const resultsData: Results | null = report
 				? {
-						filename: report.metadata.filename, 
-						...report.basic_analysis, 
+						filename: report.metadata.filename,
+						...report.basic_analysis,
 				  }
 				: null;
 			return {
 				...state,
 				status: 'success',
-				results: resultsData, 
+				results: resultsData,
 				reportData: report ?? null,
 				progress: 100,
 			};
@@ -94,9 +103,15 @@ export function pdfAuditReducer(state: AppState, action: Action): AppState {
 		case 'TOGGLE_REPORT':
 			return { ...state, showReport: action.payload };
 		case 'RESET':
-			return { ...initialState, file: state.file };
+			return {
+				...initialState,
+				file: state.file,
+				analysisLevel: state.analysisLevel,
+			};
 		case 'HARD_RESET':
 			return initialState;
+		case 'SET_ANALYSIS_LEVEL':
+			return { ...state, analysisLevel: action.payload };
 		default:
 			return state;
 	}

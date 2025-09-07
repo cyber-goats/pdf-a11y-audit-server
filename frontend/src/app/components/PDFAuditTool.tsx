@@ -16,11 +16,17 @@ import {
 	getAccessibilityScore,
 	getScoreColor,
 } from '@/app/utils/helpers';
+import {
+	AnalysisLevelSelector,
+	type AnalysisLevel,
+} from './audit/AnalysisLevelSelector';
+import { setAnalysisLevelAction } from '@/app/context/actions_with_levels';
 
 const PDFAuditTool = () => {
 	const state = usePdfAuditState();
 	const dispatch = usePdfAuditDispatch();
-	const { status, file, results, reportData, error, progress } = state;
+	const { status, file, results, reportData, error, progress, analysisLevel } =
+		state;
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const dropZoneRef = useRef<HTMLDivElement>(null);
@@ -75,6 +81,10 @@ const PDFAuditTool = () => {
 		if (fileInputRef.current) fileInputRef.current.value = '';
 	};
 
+	const handleLevelChange = (level: AnalysisLevel) => {
+		setAnalysisLevelAction(dispatch, level);
+	};
+
 	const currentAccessibilityScore = getAccessibilityScore(results);
 	const isLoading = status === 'analyzing' || status === 'generating_report';
 
@@ -89,7 +99,6 @@ const PDFAuditTool = () => {
 			</div>
 
 			<div className='relative z-10'>
-				{/* Skip link - WCAG */}
 				<a
 					href='#main-content'
 					className='sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold focus:ring-4 focus:ring-indigo-400 z-50 transition-all'
@@ -97,7 +106,6 @@ const PDFAuditTool = () => {
 					Przejdź do głównej treści
 				</a>
 
-				{/* Live region dla ogłoszeń czytnika ekranu */}
 				<div
 					role='status'
 					aria-live='polite'
@@ -113,6 +121,15 @@ const PDFAuditTool = () => {
 					<Header />
 
 					<main id='main-content' className='space-y-8'>
+						{/* SEKCJA: Selektor poziomu analizy */}
+						{!results && !reportData && (
+							<AnalysisLevelSelector
+								selectedLevel={analysisLevel}
+								onLevelChange={handleLevelChange}
+								disabled={isLoading}
+							/>
+						)}
+
 						<FileUpload
 							file={file}
 							isLoading={isLoading}
@@ -131,22 +148,131 @@ const PDFAuditTool = () => {
 							formatFileSize={formatFileSize}
 						/>
 
-						<ErrorMessage error={error} />
-
-						{results && (
-							<AnalysisResults
-								results={results}
-								getAccessibilityScore={() => currentAccessibilityScore}
-								getScoreColor={() => getScoreColor(currentAccessibilityScore)}
-							/>
+						{/* SEKCJA: Informacja o poziomie podczas ładowania */}
+						{isLoading && (
+							<div className='bg-slate-800 rounded-xl p-4 border border-slate-700'>
+								<div className='flex items-center gap-3'>
+									<div className='animate-spin'>
+										<svg
+											className='w-5 h-5 text-indigo-400'
+											fill='none'
+											viewBox='0 0 24 24'
+											stroke='currentColor'
+										>
+											<path
+												strokeLinecap='round'
+												strokeLinejoin='round'
+												strokeWidth='2'
+												d='M12 6v6m0 0v6m0-6h6m-6 0H6'
+											></path>
+										</svg>
+									</div>
+									<div>
+										<p className='text-white font-semibold'>
+											Analizuję dokument...
+										</p>
+										<p className='text-slate-400 text-sm'>
+											Poziom:{' '}
+											{analysisLevel === 'quick'
+												? 'Szybki skan'
+												: analysisLevel === 'standard'
+												? 'Analiza standardowa'
+												: 'Audyt profesjonalny'}
+										</p>
+									</div>
+								</div>
+							</div>
 						)}
 
+						<ErrorMessage error={error} />
+
+						{/* SEKCJA: Wyniki z informacją o poziomie */}
+						{results && (
+							<>
+								<div className='flex justify-end'>
+									<span
+										className={`
+                                        px-4 py-2 rounded-full text-sm font-semibold
+                                        ${
+																					analysisLevel === 'quick'
+																						? 'bg-indigo-600 text-white'
+																						: analysisLevel === 'standard'
+																						? 'bg-emerald-600 text-white'
+																						: 'bg-purple-600 text-white'
+																				}
+                                    `}
+									>
+										Analiza:{' '}
+										{analysisLevel === 'quick'
+											? 'Szybki skan'
+											: analysisLevel === 'standard'
+											? 'Standardowa'
+											: 'Profesjonalna'}
+									</span>
+								</div>
+
+								<AnalysisResults
+									results={results}
+									getAccessibilityScore={() => currentAccessibilityScore}
+									getScoreColor={() => getScoreColor(currentAccessibilityScore)}
+								/>
+
+								{/* SEKCJA: Opcja ponownej analizy */}
+								{analysisLevel !== 'professional' && (
+									<div className='bg-slate-800 rounded-xl p-6 border border-slate-700'>
+										<div className='flex items-center justify-between'>
+											<div>
+												<h3 className='text-white font-semibold mb-1'>
+													Potrzebujesz więcej szczegółów?
+												</h3>
+												<p className='text-slate-400 text-sm'>
+													Możesz przeprowadzić głębszą analizę tego dokumentu
+												</p>
+											</div>
+											<button
+												onClick={() => {
+													handleLevelChange(
+														analysisLevel === 'quick'
+															? 'standard'
+															: 'professional'
+													);
+													handleSubmit();
+												}}
+												className='px-6 py-3 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-all duration-200'
+											>
+												{analysisLevel === 'quick'
+													? 'Analiza standardowa'
+													: 'Audyt profesjonalny'}
+											</button>
+										</div>
+									</div>
+								)}
+							</>
+						)}
+
+						{/* SEKCJA: Raport z informacją o poziomie */}
 						{reportData && (
 							<div id='report-section'>
+								<div className='mb-4 flex justify-center'>
+									<div className='bg-slate-800 rounded-full px-6 py-3 border border-slate-700'>
+										<p className='text-sm text-slate-300'>
+											Raport wygenerowany na podstawie:{' '}
+											<span className='font-semibold text-white'>
+												{reportData.analysis_level === 'quick'
+													? 'Szybkiego skanu'
+													: reportData.analysis_level === 'standard'
+													? 'Analizy standardowej'
+													: 'Audytu profesjonalnego'}
+											</span>
+										</p>
+									</div>
+								</div>
+
 								<ReportView
 									reportData={reportData}
 									onDownload={handleDownloadReport}
 								/>
+
 								<div className='flex justify-center mt-4'>
 									<button
 										onClick={handleReset}
