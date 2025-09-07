@@ -89,6 +89,70 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
 				</div>
 			</div>
 			
+			{/* Metadane */}
+			<div className='bg-slate-900 rounded-xl p-6 border border-slate-700'>
+				<h3 className='font-semibold text-white mb-4'>Metadane</h3>
+				<div className='space-y-3'>
+					<div className='flex items-center justify-between'>
+						<span className='text-slate-300'>Tytuł</span>
+						{results.is_title_defined ? <CheckIcon /> : <XIcon />}
+					</div>
+					<div className='flex items-center justify-between'>
+						<span className='text-slate-300'>Język</span>
+						{results.is_lang_defined ? <CheckIcon /> : <XIcon />}
+					</div>
+					{results.is_title_defined && results.title && (
+						<div className='mt-2 pt-2 border-t border-slate-700'>
+							<p className='text-xs text-slate-400 truncate' title={results.title}>
+								{results.title}
+							</p>
+						</div>
+					)}
+					{results.is_lang_defined && results.language && (
+						<div className='text-xs text-indigo-400'>
+							Język: {results.language}
+						</div>
+					)}
+				</div>
+			</div>
+			
+			{/* Alt-teksty (gdy są obrazy) */}
+			{results.image_info && results.image_info.image_count > 0 && (
+				<div className='bg-slate-900 rounded-xl p-6 border border-slate-700'>
+					<h3 className='font-semibold text-white mb-4'>Opisy alternatywne</h3>
+					<div className='space-y-3'>
+						<div className='flex items-center justify-between'>
+							<span className='text-slate-300'>Kompletność</span>
+							<span className={`font-medium ${
+								results.image_info.images_without_alt === 0 ? 'text-green-400' : 'text-yellow-400'
+							}`}>
+								{Math.round((results.image_info.images_with_alt / results.image_info.image_count) * 100)}%
+							</span>
+						</div>
+						<div className='flex items-center justify-between'>
+							<span className='text-slate-300'>Brakujące</span>
+							<span className={`font-medium ${
+								results.image_info.images_without_alt > 0 ? 'text-red-400' : 'text-green-400'
+							}`}>
+								{results.image_info.images_without_alt}
+							</span>
+						</div>
+						{results.image_info.alt_texts && results.image_info.alt_texts.length > 0 && (
+							<div className='mt-2 pt-2 border-t border-slate-700'>
+								<p className='text-xs text-slate-400 mb-1'>Przykłady alt-tekstów:</p>
+								<ul className='text-xs text-indigo-400 space-y-1'>
+									{results.image_info.alt_texts.slice(0, 2).map((alt, idx) => (
+										<li key={idx} className='truncate' title={alt}>
+											• {alt}
+										</li>
+									))}
+								</ul>
+							</div>
+						)}
+					</div>
+				</div>
+			)}
+			
 			{/* Karta Nagłówki */}
 			{results.heading_info && (
               <div className='bg-slate-900 rounded-xl p-6 border border-slate-700'>

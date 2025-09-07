@@ -46,9 +46,7 @@ class PdfAnalysis:
         image_info = self._get_image_alts()
         metadata_info = self._get_document_metadata()
         
-        # --- POCZĄTEK POPRAWKI ---
         heading_info = self._analyze_headings()
-        # --- KONIEC POPRAWKI ---
         
         full_text = ""
         for page in self.doc:
@@ -61,9 +59,7 @@ class PdfAnalysis:
             "is_tagged": tagged,
             "contains_text": contains_text,
             "image_info": image_info,
-            # --- POCZĄTEK POPRAWKI ---
             "heading_info": heading_info,
-            # --- KONIEC POPRAWKI ---
             **metadata_info,
             "extracted_text_preview": (full_text[:500] + "...") if len(full_text) > 500 else full_text,
         }
