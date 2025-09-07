@@ -37,7 +37,7 @@ class WCAGRule(BaseModel):
     
     # Metadane
     version: str = Field("2.1", description="Wersja WCAG")
-    last_updated: str = Field(..., description="Data ostatniej aktualizacji")
+    last_updated: Optional[str] = Field(None, description="Data ostatniej aktualizacji")
     references: List[str] = Field(default_factory=list, description="Linki referencyjne")
 
     class Config:

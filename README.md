@@ -8,9 +8,9 @@ Ten projekt zawiera backend dla aplikacji A11y PDF Audit Server, napisany w Pyth
 
 Przed uruchomieniem projektu upewnij się, że masz zainstalowane następujące narzędzia:
 
-* **Docker & Docker Compose**: Do uruchomienia całej aplikacji w kontenerach.
-* **Python 3.10+**: Do lokalnego uruchomienia i dewelopmentu backendu.
-* **Git**: Do klonowania i zarządzania kodem źródłowym.
+- **Docker & Docker Compose**: Do uruchomienia całej aplikacji w kontenerach.
+- **Python 3.10+**: Do lokalnego uruchomienia i dewelopmentu backendu.
+- **Git**: Do klonowania i zarządzania kodem źródłowym.
 
 ---
 
@@ -19,6 +19,7 @@ Przed uruchomieniem projektu upewnij się, że masz zainstalowane następujące 
 Ta metoda uruchomi jednocześnie backend, frontend i bazę danych za pomocą jednego polecenia.
 
 1.  **Sklonuj repozytorium**:
+
     ```bash
     git clone <URL_TWOJEGO_REPOZYTORIUM>
     cd <nazwa-folderu-projektu>
@@ -26,6 +27,7 @@ Ta metoda uruchomi jednocześnie backend, frontend i bazę danych za pomocą jed
 
 2.  **Skonfiguruj zmienne środowiskowe**:
     Utwórz plik `.env` w głównym katalogu projektu (obok pliku `docker-compose.yml`) i dodaj do niego poniższą zawartość. **Ustaw bezpieczne hasło!**
+
     ```env
     POSTGRES_USER=user
     POSTGRES_PASSWORD=moje-super-tajne-haslo-123
@@ -47,26 +49,31 @@ Poniższe kroki pozwolą Ci uruchomić sam serwer backendowy na Twojej maszynie,
 
 1.  **Przejdź do folderu backendu**:
     Upewnij się, że jesteś w głównym folderze projektu, a następnie wejdź do katalogu z kodem backendu.
+
     ```bash
-    cd backend 
+    cd backend
     ```
 
 2.  **Utwórz środowisko wirtualne Pythona**:
     To polecenie stworzy folder `.venv`, w którym będą przechowywane wszystkie zależności tego projektu, izolując je od reszty systemu.
+
     ```bash
     py -m venv .venv
     ```
 
 3.  **Aktywuj środowisko wirtualne**:
     Musisz to robić za każdym razem, gdy otwierasz nowy terminal, aby pracować nad projektem.
+
     ```bash
     # Dla Windows (PowerShell)
     .\.venv\Scripts\Activate.ps1
     ```
+
     Po aktywacji, na początku wiersza poleceń pojawi się napis `(.venv)`.
 
 4.  **Zainstaluj zależności**:
     Ta komenda zainstaluje wszystkie biblioteki Pythona potrzebne do działania projektu, które są zdefiniowane w pliku `requirements.txt`.
+
     ```bash
     pip install -r requirements.txt
     ```
@@ -87,7 +94,6 @@ Po uruchomieniu serwera (niezależnie od metody), otwórz przeglądarkę i przej
 
 Powinieneś zobaczyć automatycznie wygenerowaną, interaktywną dokumentację API (Swagger UI). To potwierdza, że backend działa poprawnie.
 
-
 ## 🧪 Testowanie Endpointu
 
 Po uruchomieniu aplikacji możesz łatwo przetestować główny endpoint do analizy plików PDF.
@@ -106,39 +112,10 @@ Po uruchomieniu aplikacji możesz łatwo przetestować główny endpoint do anal
 6.  **Sprawdź wynik** w sekcji "Server response". Powinieneś otrzymać odpowiedź w formacie JSON z analizą Twojego pliku, np.:
     ```json
     {
-      "filename": "przykladowy.pdf",
-      "page_count": 10,
-      "is_tagged": true,
-      "contains_text": true,
-      "extracted_text_preview": "To jest początek tekstu..."
+    	"filename": "przykladowy.pdf",
+    	"page_count": 10,
+    	"is_tagged": true,
+    	"contains_text": true,
+    	"extracted_text_preview": "To jest początek tekstu..."
     }
-    ```
-
-
----
-
-## 🛠️ Lokalne Uruchomienie Tylko Backendu (Do Dewelopmentu)
-
-Poniższe kroki pozwolą Ci uruchomić sam serwer backendowy na Twojej maszynie, co jest przydatne podczas pisania kodu i debugowania.
-
-1.  **Utwórz i aktywuj środowisko wirtualne Pythona**:
-    Będąc w głównym katalogu projektu, uruchom:
-    ```bash
-    # Utworzenie środowiska
-    py -m venv .venv
-
-    # Aktywacja środowiska (dla Windows PowerShell)
-    .\.venv\Scripts\Activate.ps1
-    ```
-
-2.  **Zainstaluj zależności**:
-    Mając aktywne środowisko, zainstaluj wszystkie wymagane biblioteki.
-    ```bash
-    pip install -r backend/requirements.txt
-    ```
-
-3.  **Uruchom serwer deweloperski**:
-    Ta komenda uruchomi serwer FastAPI z folderu głównego projektu.
-    ```bash
-    uvicorn backend.app.main:app --reload
     ```

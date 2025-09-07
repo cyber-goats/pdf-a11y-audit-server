@@ -10,7 +10,6 @@ import {
 	usePdfAuditState,
 	usePdfAuditDispatch,
 } from '@/app/context/PdfAuditContext';
-import { analyzePdfAction, downloadReportAction } from '@/app/context/actions';
 import {
 	formatFileSize,
 	getAccessibilityScore,
@@ -20,7 +19,7 @@ import {
 	AnalysisLevelSelector,
 	type AnalysisLevel,
 } from './audit/AnalysisLevelSelector';
-import { setAnalysisLevelAction } from '@/app/context/actions_with_levels';
+import { analyzePdfAction, downloadReportAction, setAnalysisLevelAction } from '../context/actions';
 
 const PDFAuditTool = () => {
 	const state = usePdfAuditState();
