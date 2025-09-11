@@ -6,3 +6,5 @@ weasyprint
 redis>=4.5.0
 celery>=5.0
 pytest
+supabase
+python-dotenv

@@ -1,8 +1,11 @@
+version: '3.8'
 services:
   backend:
     build: ./backend
     ports:
       - '8000:8000'
+    env_file:
+      - .env
     volumes:
       - ./storage:/app/storage
       - ./reports:/app/reports
@@ -20,6 +23,8 @@ services:
   worker:
     build: ./backend
     command: celery -A app.tasks.celery_app worker --loglevel=info
+    env_file:
+      - .env
     volumes:
       - ./storage:/app/storage
       - ./reports:/app/reports
@@ -44,17 +49,6 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
       - backend
-    networks:
-      - app-network
-
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
     networks:
       - app-network
 
@@ -91,7 +85,6 @@ services:
       - app-network
 
 volumes:
-  pgdata:
   pdf_files:
   redis_data:
 

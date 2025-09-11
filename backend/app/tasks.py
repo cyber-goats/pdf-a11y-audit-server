@@ -4,7 +4,10 @@ from datetime import datetime
 from celery import Celery
 from app.analysis import PdfAnalysis, validate_pdf_ua, parse_verapdf_report
 from app.common.exceptions import PDFAnalysisError
+from supabase import create_client, Client
+from dotenv import load_dotenv
 
+# Konfiguracja Celery
 REDIS_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 celery_app = Celery(
     'tasks',
@@ -14,6 +17,17 @@ celery_app = Celery(
 celery_app.conf.update(
     task_track_started=True,
 )
+
+# Konfiguracja Supabase dla worker
+load_dotenv()
+url: str = os.environ.get("SUPABASE_URL")
+key: str = os.environ.get("SUPABASE_ANON_KEY")
+if not url or not key:
+    print("⚠️  Worker: Nie znaleziono zmiennych Supabase - używam statycznych rekomendacji")
+    supabase_client: Client | None = None
+else:
+    supabase_client: Client = create_client(url, key)
+    print("✅ Worker Celery połączony z Supabase!")
 
 PDF_STORAGE_PATH = "/tmp/pdfs"
 
@@ -107,6 +121,100 @@ def calculate_accessibility_score(analysis: dict, is_pdf_ua_compliant: bool) -> 
         "percentage": percentage,
         "level": level,
         "details": details
+    }
+
+def build_enriched_legacy_report(basic_analysis: dict, failed_rules: list, supabase_client) -> dict:
+    """
+    Wzbogaca raport o dane z Bazy Wiedzy Supabase.
+    Używa klucza 'klauzula-numerTestu' do wyszukiwania w knowledge_base_rules.
+    
+    Ta funkcja ZASTĘPUJE twoje statyczne rekomendacje dynamicznymi z bazy!
+    """
+    enriched_failed_rules = []
+    enriched_recommendations = []
+    
+    # Krok 1: Pobierz dane z Bazy Wiedzy za jednym razem
+    knowledge_base_entries = {}
+    if supabase_client and failed_rules:
+        # Tworzymy listę unikalnych ID dla reguł PDF/UA
+        rule_ids = list(set([
+            f"{r.get('clause')}-{r.get('testNumber')}" 
+            for r in failed_rules 
+            if r.get('clause') and r.get('testNumber')
+        ]))
+        
+        if rule_ids:
+            try:
+                import locale
+                import sys
+            
+                #UTF-8 
+                if sys.platform.startswith('win'):
+                    import codecs
+                    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
+                response = supabase_client.table('knowledge_base_rules').select('*').in_('rule_id', rule_ids).execute()
+                knowledge_base_entries = {item['rule_id']: item for item in response.data}
+                print(f"🎯 Pobrano {len(knowledge_base_entries)} wpisów z bazy wiedzy")
+            except Exception as e:
+                print(f"❌ Błąd podczas pobierania z Supabase: {e}")
+
+    # Krok 2: Podstawowe rekomendacje (NASZE)
+    if not basic_analysis.get("is_tagged"):
+        enriched_recommendations.append({
+            "priority": "high", 
+            "category": "structure",
+            "issue": "Krytyczny błąd: Dokument nie jest otagowany", 
+            "recommendation": "Dodaj tagi struktury używając Adobe Acrobat Pro. To podstawa dostępności!",
+            "wcag_reference": "WCAG 1.3.1"
+        })
+
+    images_without_alt = basic_analysis.get("image_info", {}).get("images_without_alt", 0)
+    if images_without_alt > 0:
+        enriched_recommendations.append({
+            "priority": "high", 
+            "category": "images",
+            "issue": f"Krytyczny błąd: {images_without_alt} obraz(ów) bez tekstu alternatywnego", 
+            "recommendation": "Dodaj opisy alternatywne (alt text) do wszystkich znaczących obrazów.",
+            "wcag_reference": "WCAG 1.1.1"
+        })
+
+    # Krok 3: MAGIA! Wzbogacenie błędów PDF/UA danymi z bazy
+    for rule in failed_rules:
+        rule_id = f"{rule.get('clause')}-{rule.get('testNumber')}"
+        entry = knowledge_base_entries.get(rule_id)
+        
+        new_failed_rule = rule.copy()
+
+        if entry:
+            # 🎉 MAMY DANE Z BAZY! Wzbogacamy opis
+            new_failed_rule['description'] = f"{entry.get('title', '')}: {entry.get('explanation_what', rule['description'])}"
+            new_failed_rule['wcag_reference'] = entry.get('wcag_reference', 'N/A')
+            
+            # Dodaj inteligentną rekomendację z bazy
+            enriched_recommendations.append({
+                "priority": entry.get('severity', 'medium'),
+                "category": "pdf_ua",
+                "issue": entry.get('explanation_why', ''),
+                "recommendation": entry.get('solution_how', ''),
+                "wcag_reference": entry.get('wcag_reference', 'PDF/UA')
+            })
+        else:
+            # Fallback - podstawowa rekomendacja
+            enriched_recommendations.append({
+                "priority": "low",
+                "category": "pdf_ua", 
+                "issue": f"Błąd techniczny (kod: {rule_id}) - brak opisu w bazie wiedzy",
+                "recommendation": "Sprawdź specyfikację PDF/UA lub skontaktuj się z administratorem.",
+                "wcag_reference": f"PDF/UA {rule.get('clause', '')}"
+            })
+        
+        enriched_failed_rules.append(new_failed_rule)
+
+    # Krok 4: Zwróć wzbogacony raport w Twoim formacie
+    return {
+        "enhanced_failed_rules": enriched_failed_rules,
+        "enhanced_recommendations": enriched_recommendations,
+        "knowledge_base_used": len(knowledge_base_entries) > 0
     }
 
 def generate_recommendations(analysis: dict, failed_rules: list) -> list:
@@ -231,15 +339,15 @@ def generate_recommendations(analysis: dict, failed_rules: list) -> list:
 @celery_app.task(name='app.tasks.run_full_pdf_analysis')
 def run_full_pdf_analysis_task(file_bytes: bytes, filename: str):
     """
-    Zadanie Celery, które wykonuje kompleksową analizę pliku PDF.
+    ZACHOWANA - Twoja główna funkcja z dodaną MAGIĄ Supabase!
     """
     analysis = None
     try:
-        # 1. Analiza podstawowa
+        # 1. ZACHOWANA - Twoja analiza podstawowa
         analysis = PdfAnalysis(file_bytes)
         basic_analysis_result = analysis.run_basic_analysis()
 
-        # 2. Walidacja PDF/UA
+        # 2. ZACHOWANA - Walidacja PDF/UA
         unique_filename = f"{uuid.uuid4()}.pdf"
         file_path = os.path.join(PDF_STORAGE_PATH, unique_filename)
         
@@ -257,21 +365,40 @@ def run_full_pdf_analysis_task(file_bytes: bytes, filename: str):
         if 'file_path' in locals() and os.path.exists(file_path):
             os.remove(file_path)
 
-    # 3. Złożenie finalnego raportu
+    # 3. NOWE - Wzbogacenie raportu Supabase
+    if supabase_client:
+        try:
+            enriched_data = build_enriched_legacy_report(basic_analysis_result, failed_rules, supabase_client)
+            # Użyj wzbogaconych rekomendacji
+            final_recommendations = enriched_data["enriched_recommendations"]
+            final_failed_rules = enriched_data["enriched_failed_rules"]
+            print("🎉 Użyto wzbogaconych rekomendacji z bazy wiedzy!")
+        except Exception as e:
+            print(f"⚠️ Błąd wzbogacania - używam statycznych rekomendacji: {e}")
+            # Fallback - Twoje oryginalne rekomendacje
+            final_recommendations = generate_recommendations(basic_analysis_result, failed_rules)
+            final_failed_rules = failed_rules
+    else:
+        # Brak Supabase - używaj Twoich oryginalnych funkcji
+        final_recommendations = generate_recommendations(basic_analysis_result, failed_rules)
+        final_failed_rules = failed_rules
+
+    # 4. ZACHOWANY - Twój format raportu
     report = {
         "metadata": {
             "filename": filename,
             "analysis_date": datetime.now().isoformat(),
-            "file_size": len(file_bytes)
+            "file_size": len(file_bytes),
+            "enhanced_with_supabase": supabase_client is not None
         },
         "basic_analysis": basic_analysis_result,
         "pdf_ua_validation": {
             "is_compliant": is_compliant,
-            "failed_rules_count": len(failed_rules),
-            "failed_rules": failed_rules
+            "failed_rules_count": len(final_failed_rules),
+            "failed_rules": final_failed_rules
         },
         "accessibility_score": calculate_accessibility_score(basic_analysis_result, is_compliant),
-        "recommendations": generate_recommendations(basic_analysis_result, failed_rules)
+        "recommendations": final_recommendations
     }
     
     return report
