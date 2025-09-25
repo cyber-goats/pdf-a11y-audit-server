@@ -1,49 +1,18 @@
 import { AppState, pdfAuditReducer } from '@/app/components/audit/state';
 import type { ReportData } from '@/app/types';
 import type { AnalysisLevel } from '@/app/components/audit/AnalysisLevelSelector';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// KROK 1: Importujemy nasze scentralizowane funkcje z pliku api.ts
+import {
+	analyzePdf as apiAnalyzePdf,
+	checkAnalysisStatus as apiCheckStatus,
+	downloadReport as apiDownloadReport,
+} from '@/app/services/api';
 
 type Dispatch = React.Dispatch<Parameters<typeof pdfAuditReducer>[1]>;
 
 /**
- * Wysyła plik PDF do analizy z wybranym poziomem.
- */
-const analyzePdfWithLevel = async (file: File, level: AnalysisLevel) => {
-	const formData = new FormData();
-	formData.append('file', file);
-
-	const response = await fetch(`${API_URL}/upload/?analysis_level=${level}`, {
-		method: 'POST',
-		body: formData,
-	});
-
-	if (!response.ok) {
-		const errorData = await response.json().catch(() => ({}));
-		throw new Error(errorData.detail || 'Błąd podczas wysyłania pliku');
-	}
-
-	return response.json();
-};
-
-/**
- * Sprawdza status zadania analizy.
- */
-const checkAnalysisStatus = async (taskId: string) => {
-	const response = await fetch(`${API_URL}/analysis/${taskId}`);
-
-	if (!response.ok) {
-		const errorData = await response.json().catch(() => ({}));
-		throw new Error(
-			errorData.detail?.message || 'Błąd podczas sprawdzania statusu analizy'
-		);
-	}
-
-	return response.json();
-};
-
-/**
  * Funkcja pomocnicza do odpytywania o status zadania.
+ * Ta funkcja pozostaje tutaj, ponieważ jest częścią logiki biznesowej.
  */
 const pollForResults = (
 	dispatch: Dispatch,
@@ -52,7 +21,8 @@ const pollForResults = (
 ) => {
 	const interval = setInterval(async () => {
 		try {
-			const statusResponse = await checkAnalysisStatus(taskId);
+			// Używamy funkcji z api.ts
+			const statusResponse = await apiCheckStatus(taskId);
 
 			if (statusResponse.status === 'SUCCESS') {
 				clearInterval(interval);
@@ -105,7 +75,8 @@ const pollForResults = (
 };
 
 /**
- * Kreator akcji do analizy pliku PDF z poziomem.
+ * KROK 2: Aktualizujemy akcję analizy, by korzystała z api.ts
+ * To jest teraz "głównodowodzący" procesem analizy.
  */
 export const analyzePdfAction = async (
 	dispatch: Dispatch,
@@ -118,13 +89,15 @@ export const analyzePdfAction = async (
 	const level = state.analysisLevel;
 
 	try {
-		const { task_id } = await analyzePdfWithLevel(file, level);
+		// Wywołujemy funkcję z api.ts
+		const { task_id } = await apiAnalyzePdf(file, level);
 
 		dispatch({
 			type: 'START_ANALYSIS',
 			payload: { taskId: task_id },
 		});
 
+		// Rozpoczynamy nasłuchiwanie na wyniki
 		pollForResults(dispatch, task_id, getState);
 	} catch (err) {
 		dispatch({ type: 'SET_ERROR', payload: (err as Error).message });
@@ -132,7 +105,7 @@ export const analyzePdfAction = async (
 };
 
 /**
- * Kreator akcji do zmiany poziomu analizy.
+ * Kreator akcji do zmiany poziomu analizy (bez zmian).
  */
 export const setAnalysisLevelAction = (
 	dispatch: Dispatch,
@@ -142,7 +115,7 @@ export const setAnalysisLevelAction = (
 };
 
 /**
- * Kreator akcji do pobierania raportu.
+ * KROK 3: Aktualizujemy akcję pobierania raportu.
  */
 export const downloadReportAction = async (
 	dispatch: Dispatch,
@@ -150,29 +123,8 @@ export const downloadReportAction = async (
 	reportData: ReportData
 ) => {
 	try {
-		const response = await fetch(`${API_URL}/download-report/${format}`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(reportData),
-		});
-
-		if (!response.ok) {
-			throw new Error('Błąd podczas pobierania raportu');
-		}
-
-		const blob = await response.blob();
-		const url = window.URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = `raport_dostepnosci_${
-			new Date().toISOString().split('T')[0]
-		}.${format}`;
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-		window.URL.revokeObjectURL(url);
+		// Wywołujemy funkcję z api.ts
+		await apiDownloadReport(format, reportData);
 	} catch (err) {
 		dispatch({ type: 'SET_ERROR', payload: (err as Error).message });
 	}

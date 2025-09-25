@@ -19,7 +19,12 @@ import {
 	AnalysisLevelSelector,
 	type AnalysisLevel,
 } from './audit/AnalysisLevelSelector';
-import { analyzePdfAction, downloadReportAction, setAnalysisLevelAction } from '../context/actions';
+import {
+	analyzePdfAction,
+	downloadReportAction,
+	setAnalysisLevelAction,
+} from '../context/actions';
+import { useDragAndDrop } from '../hooks/useDragAndDrop';
 
 const PDFAuditTool = () => {
 	const state = usePdfAuditState();
@@ -28,64 +33,25 @@ const PDFAuditTool = () => {
 		state;
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
-	const dropZoneRef = useRef<HTMLDivElement>(null);
-
 	const stateRef = useRef(state);
 	stateRef.current = state;
 	const getState = () => stateRef.current;
 
-	const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-		const selectedFile = event.target.files?.[0];
-		if (selectedFile) {
-			if (!selectedFile.type.includes('pdf')) {
-				dispatch({
-					type: 'SET_ERROR',
-					payload: 'Nieprawidłowy typ pliku. Proszę wybrać plik PDF.',
-				});
-				return;
-			}
-			dispatch({ type: 'SELECT_FILE', payload: selectedFile });
-		}
-	};
+	const { dropZoneRef, isDragging, ...dragHandlers } = useDragAndDrop(
+		(droppedFile) => dispatch({ type: 'SELECT_FILE', payload: droppedFile }),
+		(errorMessage) => dispatch({ type: 'SET_ERROR', payload: errorMessage })
+	);
 
-	const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
-		event.preventDefault();
-		event.stopPropagation();
-		dispatch({ type: 'END_DRAG' });
-		const droppedFile = event.dataTransfer.files[0];
-		if (droppedFile && droppedFile.type === 'application/pdf') {
-			dispatch({ type: 'SELECT_FILE', payload: droppedFile });
-		} else {
-			dispatch({
-				type: 'SET_ERROR',
-				payload: 'Nieprawidłowy typ pliku. Proszę upuścić plik PDF.',
-			});
-		}
-	};
+	const isLoading = status === 'analyzing' || status === 'generating_report';
+	const currentAccessibilityScore = getAccessibilityScore(results);
 
-	const handleSubmit = () => {
+	// Ta funkcja upraszcza logikę ponownej analizy
+	const handleReanalyze = (newLevel: AnalysisLevel) => {
+		setAnalysisLevelAction(dispatch, newLevel);
 		if (file) {
 			analyzePdfAction(dispatch, file, getState);
 		}
 	};
-
-	const handleDownloadReport = (format: string) => {
-		if (reportData) {
-			downloadReportAction(dispatch, format, reportData);
-		}
-	};
-
-	const handleReset = () => {
-		dispatch({ type: 'HARD_RESET' });
-		if (fileInputRef.current) fileInputRef.current.value = '';
-	};
-
-	const handleLevelChange = (level: AnalysisLevel) => {
-		setAnalysisLevelAction(dispatch, level);
-	};
-
-	const currentAccessibilityScore = getAccessibilityScore(results);
-	const isLoading = status === 'analyzing' || status === 'generating_report';
 
 	return (
 		<div className='min-h-screen bg-slate-900'>
@@ -98,13 +64,9 @@ const PDFAuditTool = () => {
 			</div>
 
 			<div className='relative z-10'>
-				<a
-					href='#main-content'
-					className='sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold focus:ring-4 focus:ring-indigo-400 z-50 transition-all'
-				>
+				<a href='#main-content' className='sr-only focus:not-sr-only ...'>
 					Przejdź do głównej treści
 				</a>
-
 				<div
 					role='status'
 					aria-live='polite'
@@ -120,11 +82,12 @@ const PDFAuditTool = () => {
 					<Header />
 
 					<main id='main-content' className='space-y-8'>
-						{/* SEKCJA: Selektor poziomu analizy */}
 						{!results && !reportData && (
 							<AnalysisLevelSelector
 								selectedLevel={analysisLevel}
-								onLevelChange={handleLevelChange}
+								onLevelChange={(level) =>
+									setAnalysisLevelAction(dispatch, level)
+								}
 								disabled={isLoading}
 							/>
 						)}
@@ -132,74 +95,44 @@ const PDFAuditTool = () => {
 						<FileUpload
 							file={file}
 							isLoading={isLoading}
-							isDragging={status === 'dragging'}
+							isDragging={isDragging}
 							progress={progress}
 							results={results}
 							dropZoneRef={dropZoneRef}
 							fileInputRef={fileInputRef}
-							handleDragEnter={() => dispatch({ type: 'START_DRAG' })}
-							handleDragOver={(e) => e.preventDefault()}
-							handleDragLeave={() => dispatch({ type: 'END_DRAG' })}
-							handleDrop={handleDrop}
-							handleFileSelect={handleFileSelect}
-							handleSubmit={handleSubmit}
-							handleReset={handleReset}
+							{...dragHandlers}
+							handleFileSelect={(e) => {
+								const selectedFile = e.target.files?.[0];
+								if (selectedFile) {
+									dispatch({ type: 'SELECT_FILE', payload: selectedFile });
+								}
+							}}
+							handleSubmit={() => {
+								if (file) {
+									analyzePdfAction(dispatch, file, getState);
+								}
+							}}
+							handleReset={() => {
+								dispatch({ type: 'HARD_RESET' });
+								if (fileInputRef.current) fileInputRef.current.value = '';
+							}}
 							formatFileSize={formatFileSize}
 						/>
 
-						{/* SEKCJA: Informacja o poziomie podczas ładowania */}
-						{isLoading && (
-							<div className='bg-slate-800 rounded-xl p-4 border border-slate-700'>
-								<div className='flex items-center gap-3'>
-									<div className='animate-spin'>
-										<svg
-											className='w-5 h-5 text-indigo-400'
-											fill='none'
-											viewBox='0 0 24 24'
-											stroke='currentColor'
-										>
-											<path
-												strokeLinecap='round'
-												strokeLinejoin='round'
-												strokeWidth='2'
-												d='M12 6v6m0 0v6m0-6h6m-6 0H6'
-											></path>
-										</svg>
-									</div>
-									<div>
-										<p className='text-white font-semibold'>
-											Analizuję dokument...
-										</p>
-										<p className='text-slate-400 text-sm'>
-											Poziom:{' '}
-											{analysisLevel === 'quick'
-												? 'Szybki skan'
-												: analysisLevel === 'standard'
-												? 'Analiza standardowa'
-												: 'Audyt profesjonalny'}
-										</p>
-									</div>
-								</div>
-							</div>
-						)}
-
 						<ErrorMessage error={error} />
 
-						{/* SEKCJA: Wyniki z informacją o poziomie */}
+						{/* Blok z wynikami i raportem został uproszczony */}
 						{results && (
 							<>
 								<div className='flex justify-end'>
 									<span
-										className={`
-                                        px-4 py-2 rounded-full text-sm font-semibold
-                                        ${
-																					analysisLevel === 'quick'
-																						? 'bg-indigo-600 text-white'
-																						: analysisLevel === 'standard'
-																						? 'bg-emerald-600 text-white'
-																						: 'bg-purple-600 text-white'
-																				}
-                                    `}
+										className={`px-4 py-2 rounded-full text-sm font-semibold ${
+											analysisLevel === 'quick'
+												? 'bg-indigo-600 text-white'
+												: analysisLevel === 'standard'
+												? 'bg-emerald-600 text-white'
+												: 'bg-purple-600 text-white'
+										}`}
 									>
 										Analiza:{' '}
 										{analysisLevel === 'quick'
@@ -216,8 +149,7 @@ const PDFAuditTool = () => {
 									getScoreColor={() => getScoreColor(currentAccessibilityScore)}
 								/>
 
-								{/* SEKCJA: Opcja ponownej analizy */}
-								{analysisLevel !== 'professional' && (
+								{analysisLevel !== 'professional' && !reportData && (
 									<div className='bg-slate-800 rounded-xl p-6 border border-slate-700'>
 										<div className='flex items-center justify-between'>
 											<div>
@@ -229,14 +161,13 @@ const PDFAuditTool = () => {
 												</p>
 											</div>
 											<button
-												onClick={() => {
-													handleLevelChange(
+												onClick={() =>
+													handleReanalyze(
 														analysisLevel === 'quick'
 															? 'standard'
 															: 'professional'
-													);
-													handleSubmit();
-												}}
+													)
+												}
 												className='px-6 py-3 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-all duration-200'
 											>
 												{analysisLevel === 'quick'
@@ -246,41 +177,30 @@ const PDFAuditTool = () => {
 										</div>
 									</div>
 								)}
-							</>
-						)}
 
-						{/* SEKCJA: Raport z informacją o poziomie */}
-						{reportData && (
-							<div id='report-section'>
-								<div className='mb-4 flex justify-center'>
-									<div className='bg-slate-800 rounded-full px-6 py-3 border border-slate-700'>
-										<p className='text-sm text-slate-300'>
-											Raport wygenerowany na podstawie:{' '}
-											<span className='font-semibold text-white'>
-												{reportData.analysis_level === 'quick'
-													? 'Szybkiego skanu'
-													: reportData.analysis_level === 'standard'
-													? 'Analizy standardowej'
-													: 'Audytu profesjonalnego'}
-											</span>
-										</p>
+								{reportData && (
+									<div id='report-section' className='mt-8'>
+										<ReportView
+											reportData={reportData}
+											onDownload={(format) =>
+												downloadReportAction(dispatch, format, reportData)
+											}
+										/>
+										<div className='flex justify-center mt-4'>
+											<button
+												onClick={() => {
+													dispatch({ type: 'HARD_RESET' });
+													if (fileInputRef.current)
+														fileInputRef.current.value = '';
+												}}
+												className='px-6 py-3 bg-slate-700 text-white font-medium rounded-xl hover:bg-slate-600 transition-all'
+											>
+												Analizuj kolejny plik
+											</button>
+										</div>
 									</div>
-								</div>
-
-								<ReportView
-									reportData={reportData}
-									onDownload={handleDownloadReport}
-								/>
-
-								<div className='flex justify-center mt-4'>
-									<button
-										onClick={handleReset}
-										className='px-6 py-3 bg-slate-700 text-white font-medium rounded-xl hover:bg-slate-600 transition-all duration-200 focus:ring-4 focus:ring-slate-400'
-									>
-										Analizuj kolejny plik
-									</button>
-								</div>
-							</div>
+								)}
+							</>
 						)}
 					</main>
 
