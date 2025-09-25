@@ -14,3 +14,8 @@ class PasswordProtectedPDFError(PDFAnalysisError):
     """Błąd dla plików PDF zabezpieczonych hasłem."""
     def __init__(self, message="Plik PDF jest zabezpieczony hasłem i nie można go przetworzyć."):
         super().__init__(message, "ERR_PASSWORD_PROTECTED")
+        
+class PotentiallyUnsafePDFError(PDFAnalysisError):
+    """Błąd dla plików PDF, które mogą zawierać niebezpieczną zawartość."""
+    def __init__(self, message="Plik PDF zawiera potencjalnie niebezpieczną zawartość (np. skrypty)."):
+        super().__init__(message, "ERR_UNSAFE_CONTENT")

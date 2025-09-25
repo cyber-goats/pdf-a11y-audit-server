@@ -5,7 +5,7 @@ from celery import Celery
 from app.analysis_enhanced import EnhancedPdfAnalysis
 from app.analysis import validate_pdf_ua, parse_verapdf_report
 from app.models.analysis_levels import AnalysisLevel
-from app.common.exceptions import PDFAnalysisError
+from app.common.exceptions import PDFAnalysisError, PotentiallyUnsafePDFError
 
 REDIS_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 celery_app = Celery(
@@ -35,8 +35,15 @@ def run_enhanced_pdf_analysis_task(
         
         # 1. Analiza z wybranym poziomem
         analysis = EnhancedPdfAnalysis(file_bytes)
-        analysis_result = analysis.analyze(level)
         
+        # Sprawdzamy, czy odziedziczona metoda wykryje skrypt
+        if analysis.contains_javascript():
+            # Jeśli tak, rzucamy wyjątek, który zatrzyma zadanie
+            raise PotentiallyUnsafePDFError("Plik został zablokowany, ponieważ zawiera aktywne skrypty (JavaScript), które mogą być niebezpieczne.")
+        
+        # Jeżeli plik jest bezpieczny, kontynuujemy
+        analysis_result = analysis.analyze(level)
+                
         # 2. Walidacja PDF/UA (tylko dla STANDARD i PROFESSIONAL)
         pdf_ua_result = None
         if not config["skip_verapdf"]:
@@ -74,7 +81,7 @@ def run_enhanced_pdf_analysis_task(
         
         return report
         
-    except PDFAnalysisError as e:
+    except (PDFAnalysisError, PotentiallyUnsafePDFError) as e:
         raise e
     finally:
         if analysis:
