@@ -1,23 +1,28 @@
-import type { AnalysisStatusResponse, AnalysisTaskResponse, ReportData, Results } from '@/app/types';
+import type { AnalysisStatusResponse, AnalysisTaskResponse, ReportData } from '@/app/types';
+import { AnalysisLevel } from '../components/audit/AnalysisLevelSelector';
 
+// Definiujemy bazowy adres URL API w jednym miejscu
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 /**
- * Wysyła plik PDF do analizy.
+ * Wysyła plik PDF do analizy z określonym poziomem szczegółowości.
  * @param file - Plik PDF do przetworzenia.
- * @returns Obietnica z wynikami analizy.
+ * @param level - Poziom analizy ('quick', 'standard', 'professional').
+ * @returns Obietnica z ID zadania.
  */
-export const analyzePdf = async (file: File): Promise<AnalysisTaskResponse> => {
+export const analyzePdf = async (file: File, level: AnalysisLevel): Promise<AnalysisTaskResponse> => {
 	const formData = new FormData();
 	formData.append('file', file);
 
-	const response = await fetch(`${API_URL}/upload/`, {
+	// Używamy nowego endpointu, który przyjmuje poziom analizy
+	const response = await fetch(`${API_URL}/upload/?analysis_level=${level}`, {
 		method: 'POST',
 		body: formData,
 	});
 
 	if (!response.ok) {
 		const errorData = await response.json().catch(() => ({}));
+		// Rzucamy błąd z informacją zwrotną z serwera
 		throw new Error(errorData.detail || 'Błąd podczas wysyłania pliku');
 	}
 
@@ -31,8 +36,7 @@ export const analyzePdf = async (file: File): Promise<AnalysisTaskResponse> => {
  */
 export const checkAnalysisStatus = async (
 	taskId: string
-):Promise<AnalysisStatusResponse> => {
-	// Odpytujemy nowy endpoint /analysis/{task_id}
+): Promise<AnalysisStatusResponse> => {
 	const response = await fetch(`${API_URL}/analysis/${taskId}`);
 
 	if (!response.ok) {
@@ -46,9 +50,9 @@ export const checkAnalysisStatus = async (
 };
 
 /**
- * Pobiera wygenerowany raport w określonym formacie.
+ * Wysyła żądanie pobrania raportu w określonym formacie.
  * @param format - Format raportu ('json', 'html', 'pdf').
- * @param reportData - Dane raportu do wysłania.
+ * @param reportData - Dane raportu do wysłania w ciele żądania.
  */
 export const downloadReport = async (
 	format: string,
@@ -69,6 +73,7 @@ export const downloadReport = async (
 		);
 	}
 
+	// Logika pobierania pliku
 	const blob = await response.blob();
 	const url = window.URL.createObjectURL(blob);
 	const a = document.createElement('a');
