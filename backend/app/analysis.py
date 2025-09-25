@@ -34,7 +34,21 @@ class PdfAnalysis:
         except (PasswordProtectedPDFError, CorruptPDFError) as e:
             self.close()
             raise e
-
+    
+    def contains_javascript(self) -> bool:
+        """Sprawdza, czy dokument PDF zawiera skrypty JavaScript."""
+        has_js = False
+        for xref in range(1, self.doc.xref_length()):
+            try:
+                # Szukamy obiektów z akcją /S /JavaScript
+                obj_str = self.doc.xref_object(xref, compressed=False)
+                if obj_str and "/S /JavaScript" in obj_str:
+                    has_js = True
+                    logger.warning(f"Wykryto potencjalny JavaScript w obiekcie xref {xref}")
+                    break
+            except Exception:
+                continue
+        return has_js
 
     def run_basic_analysis(self) -> Dict:
         """
@@ -54,10 +68,13 @@ class PdfAnalysis:
 
         contains_text = len(full_text.strip()) > 0
         
+        contains_js = self.contains_javascript()
+        
         return {
             "page_count": self.doc.page_count,
             "is_tagged": tagged,
             "contains_text": contains_text,
+            "contains_javascript": contains_js,
             "image_info": image_info,
             "heading_info": heading_info,
             **metadata_info,
